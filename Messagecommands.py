@@ -31,22 +31,22 @@ def tryCommands(s, chan, user, message):
     delc = 0
     exists = 0
     worked = 0
-    kaisanetacc = **REDACTED**
-    kaisanetpass = **REDACTED**
+    kaisanetacc = REDACTED
+    kaisanetpass = REDACTED
     delthis = ""
     chancmds = chan + 'commands.txt'
-    cmdfile = open(chancmds, 'a+')
-    commands = cmdfile.readlines()
+    with open(chancmds, 'a+') as cmdfile:
+        commands = cmdfile.readlines()
     chanmods = chan + 'mods.txt'
-    modsfile = open(chanmods, 'a+')
-    mods = modsfile.readlines()
+    with open(chanmods, 'a+') as modsfile:
+        mods = modsfile.readlines()
 
     if message.startswith("!rng"):
         try:
-	    u, a = message.split("!rng ")
-	    print u, a
-	    a, b = a.split(" ")
-	    r = randint(int(a), int(b))
+            u, a = message.split("!rng ")
+            print u, a
+            a, b = a.split(" ")
+            r = randint(int(a), int(b))
             resp = "You got " + str(r)
             sendChanMsg(s, chan, resp)
         except:
@@ -148,98 +148,104 @@ def tryCommands(s, chan, user, message):
             print "updatecommands error"
 
     if message.startswith("!Laddcom") or message.startswith("!laddcom"):
-        for names in mods:
-            if names.strip().lower() == user.strip().lower():
-                try:
-                    a, b = message.split('m !', 1)
-                    c, d = b.split(': ', 1)
-                    c = '!' + c
-                    cmd = c.decode('utf8')
-                    action = d.decode('utf8')
+        try:
+            with open(chancmds, 'a+') as cmdfile:
+                for names in mods:
+                    if names.strip().lower() == user.strip().lower():
+                        try:
+                            a, b = message.split('m !', 1)
+                            c, d = b.split(': ', 1)
+                            c = '!' + c
+                            cmd = c.decode('utf8')
+                            action = d.decode('utf8')
 
-                    for sueless in commands:
-                            if commands[addc].strip().lower().decode('utf8') == cmd.strip().lower():
-                                    response = ("Command already exists " + commands[addc].strip() + " = " + commands[addc+2] + " please !delcom !" + commands[addc].strip() + "first")
-                                    exists = 1
-                                    sendChanMsg(s, chan, response)
+                            for sueless in commands:
+                                    if commands[addc].strip().lower().decode('utf8') == cmd.strip().lower():
+                                            response = ("Command already exists " + commands[addc].strip() + " = " + commands[addc+2] + " please !delcom !" + commands[addc].strip() + "first")
+                                            exists = 1
+                                            sendChanMsg(s, chan, response)
+                                            break
+                                    
+                                    if commands[addc].strip().lower().decode('utf8') == action.strip().lower():
+                                            response = ("Same action already exists in command " + commands[addc-2].strip() + " = " + commands[addc] + " please !delcom !" + commands[addc-2].strip() + "first")
+                                            exists = 1
+                                            sendChanMsg(s, chan, response)
+                                            break
+                                    addc = addc + 1
+                        
+                            if action.startswith("!"):
+                                    action = action.replace('!', '')
+                                    
+                            if exists != 1:
+                                    cmdfile.write('\n'.encode('utf8') + cmd.encode('utf8') + '\n\n'.encode('utf8') + action.encode('utf8') + '\n'.encode('utf8'))
+                                    toLog = user + " added command " + cmd + " that does action: " + action.strip()
+                                    info = chan + "reports"
+                                    resp = "added " + cmd.strip() + " : " + action.strip()
+                                    sendChanMsg(s, chan, resp)
+                                    log(toLog, info)
+                                    if chan.strip() == "susihukka2551":
+                                            cmdfile.close()
+                                            session = ftplib.FTP('ftp.kaisanet.net', kaisanetacc, kaisanetpass)
+                                            file = open('susihukka2551commands.txt', 'rb')
+                                            session.storbinary('STOR susihukka2551commands.txt', file)
+                                            file.close()
+                                            session.quit()
+                                    sleep(0.1)
                                     break
-                            
-                            if commands[addc].strip().lower().decode('utf8') == action.strip().lower():
-                                    response = ("Same action already exists in command " + commands[addc-2].strip() + " = " + commands[addc] + " please !delcom !" + commands[addc-2].strip() + "first")
-                                    exists = 1
-                                    sendChanMsg(s, chan, response)
-                                    break
-                            addc = addc + 1
-                
-                    if action.startswith("!"):
-                            action = action.replace('!', '')
-                            
-                    if exists != 1:
-                            cmdfile.write('\n'.encode('utf8') + cmd.encode('utf8') + '\n\n'.encode('utf8') + action.encode('utf8') + '\n'.encode('utf8'))
-                            toLog = user + " added command " + cmd + " that does action: " + action.strip()
-                            info = chan + "reports"
-                            resp = "added " + cmd.strip() + " : " + action.strip()
-                            sendChanMsg(s, chan, resp)
-                            log(toLog, info)
-                            if chan.strip() == "susihukka2551":
-                                    cmdfile.close()
-                                    session = ftplib.FTP('ftp.kaisanet.net', kaisanetacc, kaisanetpass)
-                                    file = open('susihukka2551commands.txt', 'rb')
-                                    session.storbinary('STOR susihukka2551commands.txt', file)
-                                    file.close()
-                                    session.quit()
-                            sleep(0.1)
-                            break
-                except:
-                    msg = "@" + user + " look now,> !addcom !test: test, muista kaksoispisteet ::::"
-                    sendChanMsg(s, chan, msg)
-                    break
-
+                        except:
+                            msg = "@" + user + " look now,> !addcom !test: test, muista kaksoispisteet ::::"
+                            sendChanMsg(s, chan, msg)
+        except:
+            print "error in laddcom"
 
 
     if message.startswith("!delcom"):
-        num = 0
-        pois1 = 0
-        pois2 = 0
-        for names in mods:
-            if names.strip().lower() == user.strip().lower():
-                a, b = message.split('!delcom ', 1)
-                poistettava = b.strip()
-                for sueless in commands:
-                    if commands[num].strip().lower() == poistettava.strip().lower():
-                            delthis = commands[num+2]
-                    num = num + 1
+        try:
+            with open(chancmds, 'a+') as cmdfile:
+                num = 0
+                pois1 = 0
+                pois2 = 0
+                for names in mods:
+                    if names.strip().lower() == user.strip().lower():
+                        a, b = message.split('!delcom ', 1)
+                        poistettava = b.strip()
+                        for sueless in commands:
+                            if commands[num].strip().lower() == poistettava.strip().lower():
+                                    delthis = commands[num+2]
+                            num = num + 1
 
 
-                for linja in fileinput.input(chancmds, inplace=True):
-                    if (poistettava.strip().lower() == linja.strip().lower()) and pois1 == 0:
-                            pois1 = 1
-                            continue
-                    print linja,
-                fileinput.close()
+                        for linja in fileinput.input(chancmds, inplace=True):
+                            if (poistettava.strip().lower() == linja.strip().lower()) and pois1 == 0:
+                                    pois1 = 1
+                                    continue
+                            print linja,
+                        fileinput.close()
 
-                delthis = delthis.strip()
-                for linja2 in fileinput.input(chancmds, inplace=True):
-                    if (delthis.strip().lower() == linja2.strip().lower()) and pois2 == 0:
-                            pois2 = 1
-                            continue
-                    print linja2,
+                        delthis = delthis.strip()
+                        for linja2 in fileinput.input(chancmds, inplace=True):
+                            if (delthis.strip().lower() == linja2.strip().lower()) and pois2 == 0:
+                                    pois2 = 1
+                                    continue
+                            print linja2,
 
-                fileinput.close()
-        
-                if chan.strip() == "susihukka2551":
-                    cmdfile.close()
-                    session = ftplib.FTP('ftp.kaisanet.net', kaisanetacc, kaisanetpass)
-                    file = open('susihukka2551commands.txt', 'rb')
-                    session.storbinary('STOR susihukka2551commands.txt', file)
-                    file.close()
-                    session.quit()
-                toLog = user + " deleted command " + poistettava + " that did action: " + delthis.strip()
-                info = chan + "reports"
-                log(toLog, info)
-                resp = "deleted " + cmd.strip() + " : " + action.strip()
-                sendChanMsg(s, chan, resp)
-
+                        fileinput.close()
+                
+                        if chan.strip() == "susihukka2551":
+                            cmdfile.close()
+                            session = ftplib.FTP('ftp.kaisanet.net', kaisanetacc, kaisanetpass)
+                            file = open('susihukka2551commands.txt', 'rb')
+                            session.storbinary('STOR susihukka2551commands.txt', file)
+                            file.close()
+                            session.quit()
+                        if pois1 == 1 and pois2 == 1:
+                            toLog = user + " deleted command " + poistettava + " that did action: " + delthis.strip()
+                            info = chan + "reports"
+                            log(toLog, info)
+                            resp = "deleted " + poistettava.strip() + " : " + delthis.strip()
+                            sendChanMsg(s, chan, resp)
+        except:
+            print "delcom error"
 
     if message.startswith("!csfind"):
         try:
@@ -353,112 +359,115 @@ def tryCommands(s, chan, user, message):
 
 
     if message.startswith("!addcom"):
-        for names in mods:
-            if names.strip().lower() == user.strip().lower():
-                try:
-                    a, b = message.split('!addcom ', 1)
-                    c, d = b.split(' ', 1)
-                    if c.startswith("!") == False:
-                        c = '!' + c
-                    #c = '!' + c # this is useless after fixing bug
-                    cmd = c.decode('utf8')
-                    if cmd.endswith(':'):
-                        cmd = cmd.replace(':', '')
-                        sendChanMsg(s, chan, "commandi lisättiin oikein, mutta enää ei tarvitse käyttää kaksoispisteitä commandin addaamiseen. check !commands for more info about this change")
+        with open(chancmds, 'a+') as cmdfile:
+            for names in mods:
+                if names.strip().lower() == user.strip().lower():
+                    try:
+                        a, b = message.split('!addcom ', 1)
+                        c, d = b.split(' ', 1)
+                        if c.startswith("!") == False:
+                            c = '!' + c
+                        #c = '!' + c # this is useless after fixing bug
+                        cmd = c.decode('utf8')
+                        if cmd.endswith(':'):
+                            cmd = cmd.replace(':', '')
+                            sendChanMsg(s, chan, "commandi lisättiin oikein, mutta enää ei tarvitse käyttää kaksoispisteitä commandin addaamiseen. check !commands for more info about this change")
 
-                    action = d.decode('utf8')
+                        action = d.decode('utf8')
 
-                    for sueless in commands:
-                        if commands[addc].strip().lower().decode('utf8') == cmd.strip().lower():
-                            response = ("Command already exists " + commands[addc].strip() + " = " + commands[addc+2].strip() + " please !delcom " + commands[addc].strip() + " first")
-                            exists = 1
-                            sendChanMsg(s, chan, response)
-                            break
-                            
-                        if commands[addc].strip().lower().decode('utf8') == action.strip().lower():
-                            response = ("Same action already exists in command " + commands[addc-2].strip() + " = " + commands[addc].strip() + " please !delcom " + commands[addc-2].strip() + " first")
-                            exists = 1
-                            sendChanMsg(s, chan, response)
-                            break
-                        addc = addc + 1
-                            
-                    if action.startswith("!"):
-                            action = action.replace('!', '')
-                            
-                    if exists != 1:
-                            cmdfile.write('\n'.encode('utf8') + cmd.encode('utf8') + '\n\n'.encode('utf8') + action.encode('utf8') + '\n'.encode('utf8'))
-                            toLog = user + " added command " + cmd + " that does action: " + action.strip()
-                            info = chan + "reports"
-                            log(toLog, info)
-                            if chan.strip() == "susihukka2551":
-                                cmdfile.close()
-                                session = ftplib.FTP('ftp.kaisanet.net', kaisanetacc, kaisanetpass)
-                                file = open('susihukka2551commands.txt', 'rb')
-                                session.storbinary('STOR susihukka2551commands.txt', file)
-                                file.close()
-                                session.quit()
-                            sleep(0.1)
-                            break
-                except:
-                    print "error"
-                    break
+                        for sueless in commands:
+                            if commands[addc].strip().lower().decode('utf8') == cmd.strip().lower():
+                                response = ("Command already exists " + commands[addc].strip() + " = " + commands[addc+2].strip() + " please !delcom " + commands[addc].strip() + " first")
+                                exists = 1
+                                sendChanMsg(s, chan, response)
+                                break
+                                
+                            if commands[addc].strip().lower().decode('utf8') == action.strip().lower():
+                                response = ("Same action already exists in command " + commands[addc-2].strip() + " = " + commands[addc].strip() + " please !delcom " + commands[addc-2].strip() + " first")
+                                exists = 1
+                                sendChanMsg(s, chan, response)
+                                break
+                            addc = addc + 1
+                                
+                        if action.startswith("!"):
+                                action = action.replace('!', '')
+                                
+                        if exists != 1:
+                                cmdfile.write('\n'.encode('utf8') + cmd.encode('utf8') + '\n\n'.encode('utf8') + action.encode('utf8') + '\n'.encode('utf8'))
+                                toLog = user + " added command " + cmd + " that does action: " + action.strip()
+                                info = chan + "reports"
+                                log(toLog, info)
+                                if chan.strip() == "susihukka2551":
+                                    cmdfile.close()
+                                    session = ftplib.FTP('ftp.kaisanet.net', kaisanetacc, kaisanetpass)
+                                    file = open('susihukka2551commands.txt', 'rb')
+                                    session.storbinary('STOR susihukka2551commands.txt', file)
+                                    file.close()
+                                    session.quit()
+                                sleep(0.1)
+                                break
+                    except:
+                        print "error"
+
 
     if message.startswith("!addmod"):
-        for names in mods:
-            if names.strip().lower() == user.strip().lower():
-                try:
-                    a, b = message.split('!addmod', 1)
-                    b = b.strip()
-                    for sueless in mods:
-                        if mods[addc].strip().decode('utf8') == b.decode('utf8'):
-                            response = ("Mod is already on list")
-                            exists = 1
-                            sendChanMsg(s, chan, response)
+        with open(chanmods, 'a+') as modsfile:
+            for names in mods:
+                if names.strip().lower() == user.strip().lower():
+                    try:
+                        a, b = message.split('!addmod', 1)
+                        b = b.strip()
+                        for sueless in mods:
+                            if mods[addc].strip().decode('utf8') == b.decode('utf8'):
+                                response = ("Mod is already on list")
+                                exists = 1
+                                sendChanMsg(s, chan, response)
+                                break
+                            addc = addc + 1
+                                
+                        if exists != 1:
+                            modsfile.write('\n'.encode('utf8') + b.encode('utf8') + '\n'.encode('utf8'))
+                            toLog = user + " added mod " + b
+                            info = chan + "reports"
+                            log(toLog, info)
+                            sleep(0.1)
                             break
-                        addc = addc + 1
-                            
-                    if exists != 1:
-                        modsfile.write('\n'.encode('utf8') + b.encode('utf8') + '\n'.encode('utf8'))
-                        toLog = user + " added mod " + b
-                        info = chan + "reports"
-                        log(toLog, info)
-                        sleep(0.1)
+                    except:
+                        msg = "@" + user + "check commands how to use !addmod or error was happeneds,,"
+                        sendChanMsg(s, chan, msg)
                         break
-                except:
-                    msg = "@" + user + "check commands how to use !addmod or error was happeneds,,"
-                    sendChanMsg(s, chan, msg)
-                    break
     
     if message.startswith("!delmod"):
-        num = 0
-        if chan.strip().lower() == user.strip().lower():
-            try:
-                a, b = message.split('!delmod ', 1)
-                poistettava = b.strip()
-                for sueless in commands:
-                    if commands[num].strip() == poistettava.strip():
-                            delthis = commands[num+2]
-                    num = num + 1
+        with open(chanmods, 'a+') as modsfile:
+            num = 0
+            if chan.strip().lower() == user.strip().lower():
+                try:
+                    a, b = message.split('!delmod ', 1)
+                    poistettava = b.strip()
+                    for sueless in commands:
+                        if commands[num].strip() == poistettava.strip():
+                                delthis = commands[num+2]
+                        num = num + 1
 
-                for linja in fileinput.input(chanmods, inplace=True):
-                    if poistettava.strip() == linja.strip():
-                        continue
-                    print linja,
-                fileinput.close()
+                    for linja in fileinput.input(chanmods, inplace=True):
+                        if poistettava.strip() == linja.strip():
+                            continue
+                        print linja,
+                    fileinput.close()
 
-                delthis = delthis.strip()
-                for linja2 in fileinput.input(chanmods, inplace=True):
-                    if delthis.strip() == linja2.strip():
-                        continue
-                    print linja2,
+                    delthis = delthis.strip()
+                    for linja2 in fileinput.input(chanmods, inplace=True):
+                        if delthis.strip() == linja2.strip():
+                            continue
+                        print linja2,
 
-                fileinput.close()
+                    fileinput.close()
 
-                toLog = user + " deleted mod " + b
-                info = chan + "reports"
-                log(toLog, info)
-            except:
-                print "error in !delmod"
+                    toLog = user + " deleted mod " + b
+                    info = chan + "reports"
+                    log(toLog, info)
+                except:
+                    print "error in !delmod"
 
 
     #for songs in sr:
@@ -523,11 +532,3 @@ def tryCommands(s, chan, user, message):
                     break                                                        
 
             num = num + 1
-
-
-
-
-
-
-    cmdfile.close()
-    modsfile.close()
