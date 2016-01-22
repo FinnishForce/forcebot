@@ -356,9 +356,11 @@ def tryCommands(s, chan, user, message):
         for names in mods:
             if names.strip().lower() == user.strip().lower():
                 try:
-                    a, b = message.split('m !', 1)
+                    a, b = message.split('!addcom ', 1)
                     c, d = b.split(' ', 1)
-                    c = '!' + c
+                    if c.startswith("!") == False:
+                        c = '!' + c
+                    #c = '!' + c # this is useless after fixing bug
                     cmd = c.decode('utf8')
                     if cmd.endswith(':'):
                         cmd = cmd.replace(':', '')
