@@ -6,17 +6,18 @@ import re
 import websocket
 from datetime import datetime, timedelta, date, time
 from time import sleep
+steamapikey = "xyz"
 
 def getSteamStats(steamid):
         try:
                 favs = ['1','Desert Eagle','2','Dual Berettas','3','Five-SeveN','4','Glock-18','7','AK-47','8','AUG','9','AWP','10','FAMAS','11','G3SG1','13','Galil AR','14','M249','16','M4A4 or A1','17','MAC-10','19','P90','35','Nova','60','M4A1-S','24','UMP-45','25','XM1014','26','PP-Bizon','27','MAG-7','28','Negev','29','Sawed-Off','30','Tec-9','31','Zeus x27','32','P2000','33','MP7','34','MP9','36','P250','38','SCAR-20','39','SG 553','40','SSG 08','42','Knife','61','USP-S','63','CZ75-Auto']
                 favweapon = "null"
                 totalwins = 0
-                url = ("http://api.steampowered.com/ISteamUserStats/GetUserStatsForGame/v0002/?appid=730&key=+" + steamapikey + "&steamid=" + steamid)
-		req = urllib2.Request(url)
-		resp = urllib2.urlopen(req)
-		page = json.load(resp)
-		for entry in page['playerstats']['stats']:
+                url = ("http://api.steampowered.com/ISteamUserStats/GetUserStatsForGame/v0002/?appid=730&key=" + steamapikey + "&steamid=" + steamid)
+                req = urllib2.Request(url)
+                resp = urllib2.urlopen(req)
+                page = json.load(resp)
+                for entry in page['playerstats']['stats']:
                         if entry['name'] == 'last_match_t_wins':
                                 t_wins = entry['value']
                         if entry['name'] == 'last_match_ct_wins':
@@ -80,62 +81,62 @@ def getSteamStats(steamid):
                 return resp
                                 
                 
-	except:
-		print "getSteamStats api.py error"
+        except:
+                print "getSteamStats api.py error"
 
 def getUptime(chan):
 
-	try:	
-		url = ("https://api.twitch.tv/kraken/streams/" + chan)
-		req = urllib2.Request(url)
-		resp = urllib2.urlopen(req)
-		page = json.load(resp)
+        try:    
+                url = ("https://api.twitch.tv/kraken/streams/" + chan)
+                req = urllib2.Request(url)
+                resp = urllib2.urlopen(req)
+                page = json.load(resp)
 
-		if page['stream'] == None:
-			return "Stream is offline"
+                if page['stream'] == None:
+                        return "0:00:00 (stream offline)"
 
-		started = page['stream']['created_at']
-		timeFormat = "%Y-%m-%dT%H:%M:%SZ"
-		startdate = datetime.strptime(started, timeFormat)
-		current = datetime.utcnow()
-		combined = current - startdate - timedelta(microseconds=current.microsecond)
-		return "Uptime: " + str(combined)
+                started = page['stream']['created_at']
+                timeFormat = "%Y-%m-%dT%H:%M:%SZ"
+                startdate = datetime.strptime(started, timeFormat)
+                current = datetime.utcnow()
+                combined = current - startdate - timedelta(microseconds=current.microsecond)
+                return str(combined)
 
-	except:
-		print "getuptime api.py error" + datetime.utcnow()
+        except:
+                print "getuptime api.py error" + datetime.utcnow()
 
 def updateMods(chan):
-	try:	
-		url = ("http://tmi.twitch.tv/group/user/" + chan + "/chatters")
-		req = urllib2.Request(url)
-		resp = urllib2.urlopen(req)
-		page = json.load(resp)
-		
-		if page['chatters']['moderators'] == None:
-			print "no moderators"
-			return 0		
-		
-		apimods = page['chatters']['moderators']
-		addc = 0
-		chanmods = chan + 'mods.txt'
+        try:    
+                url = ("http://tmi.twitch.tv/group/user/" + chan + "/chatters")
+                req = urllib2.Request(url)
+                resp = urllib2.urlopen(req)
+                page = json.load(resp)
+                
+                if page['chatters']['moderators'] == None:
+                        print "no moderators"
+                        return 0                
+                
+                apimods = page['chatters']['moderators']
+                addc = 0
+                chanmods = chan + 'mods.txt'
                 modsfile = open(chanmods, 'a+')
                 mods = modsfile.readlines()
-		if not mods:
-			modsfile.write(chan.encode('utf8') + '\n'.encode('utf8'))
+                if not mods:
+                        modsfile.write(chan.encode('utf8') + '\n'.encode('utf8'))
 
-		for somethings in mods:
+                for somethings in mods:
                         if mods[addc].strip().decode('utf8') == apimods[addc].decode('utf8'):
                                 sleep(0.1)
-			else:
-				modsfile.write(apimods[addc].encode('utf8') + '\n'.encode('utf8'))
-			
+                        else:
+                                modsfile.write(apimods[addc].encode('utf8') + '\n'.encode('utf8'))
+                        
                         addc = addc + 1
 
 
-		modsfile.close()
+                modsfile.close()
 
-	except:
-		print "updatemods api.py error"
+        except:
+                print "updatemods api.py error"
 
 def restartbot():
     command = "/usr/bin/sudo /sbin/shutdown -r now"
@@ -163,9 +164,9 @@ def convertToSteam64(vanity):
 def getTussariKills(steamid):
         try:
                 url = ("http://api.steampowered.com/ISteamUserStats/GetUserStatsForGame/v0002/?appid=730&key=" + steamapikey + "&steamid=" + steamid)
-		req = urllib2.Request(url)
-		resp = urllib2.urlopen(req)
-		page = json.load(resp)
+                req = urllib2.Request(url)
+                resp = urllib2.urlopen(req)
+                page = json.load(resp)
                 for entry in page['playerstats']['stats']:
                         if entry['name'] == 'total_kills_nova':
                                 novakills = entry['value']
@@ -194,10 +195,10 @@ def getPlayerBans(steamid):
         try:
                 playerName = "null"
                 url = ("http://api.steampowered.com/ISteamUser/GetPlayerBans/v1/?key=" + steamapikey + "&steamids=" + steamid)
-		req = urllib2.Request(url)
-		resp = urllib2.urlopen(req)
-		page = json.load(resp)
-		for entry in page['players']:
+                req = urllib2.Request(url)
+                resp = urllib2.urlopen(req)
+                page = json.load(resp)
+                for entry in page['players']:
                         vacs = entry['NumberOfVACBans']
                         lastban = entry['DaysSinceLastBan']
                         gamebans = entry['NumberOfGameBans']
@@ -221,9 +222,9 @@ def getKills(steamid, wpn):
                 what = 'total_kills_' + wpn.strip()
                 what = what.lower()
                 url = ("http://api.steampowered.com/ISteamUserStats/GetUserStatsForGame/v0002/?appid=730&key=" + steamapikey + "&steamid=" + steamid)
-		req = urllib2.Request(url)
-		resp = urllib2.urlopen(req)
-		page = json.load(resp)
+                req = urllib2.Request(url)
+                resp = urllib2.urlopen(req)
+                page = json.load(resp)
                 for entry in page['playerstats']['stats']:
                         if entry['name'] == what:
                                 kills = entry['value']
@@ -247,4 +248,41 @@ def getJoin():
                 return "Joining not possible at the moment."
 
 
+def getViewers(chan):
+        try:
+                url = ("https://tmi.twitch.tv/group/user/" + chan + "/chatters")
+                req = urllib2.Request(url)
+                resp = urllib2.urlopen(req)
+                page = json.load(resp)
+                viewers = []
+                for entry in page['chatters']['moderators']:
+                        viewers.append(entry)
+                for entry in page['chatters']['staff']:
+                        viewers.append(entry)
+                for entry in page['chatters']['admins']:
+                        viewers.append(entry)
+                for entry in page['chatters']['global_mods']:
+                        viewers.append(entry)
+                for entry in page['chatters']['viewers']:
+                        viewers.append(entry)
                         
+                return viewers
+
+                
+        except:
+                print "getviewers error"
+
+
+def getViewerAmount(chan):
+        try:
+                url = ("https://tmi.twitch.tv/group/user/" + chan + "/chatters")
+                req = urllib2.Request(url)
+                resp = urllib2.urlopen(req)
+                page = json.load(resp)
+                amount = page['chatter_count']
+
+                return amount
+        except:
+                print "getvieweramount error"
+
+                
