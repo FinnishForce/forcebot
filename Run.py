@@ -3,6 +3,7 @@
 from __future__ import division
 from subprocess import PIPE, Popen
 import psutil
+import socket
 
 def get_cpu_temperature():
     process = Popen(['vcgencmd', 'measure_temp'], stdout=PIPE)
@@ -20,7 +21,7 @@ def main_loop():
         from time import sleep, time
         from datetime import datetime, timedelta
         from Read import getUser, getMessage, getChannel
-        from Socket import openSocket, sendMessage, sendChanMsg, joinChan, quitChan
+        from Socket import openSocket, sendMessage, sendChanMsg, joinChan, quitChan, whisperSocket
         from Init import joinRoom
         from Logger import log
         from Api import getUptime, updateMods, restartbot, getSteamStats, convertToSteam64
@@ -30,16 +31,10 @@ def main_loop():
         joinRoom(s)
         s.setblocking(0)
         readbuffer = ""
-        num = 0
         elapsed = 0
         end = 0
-        dt_uptime = 0
-        downtime = 0
         reload(sys)
         sys.setdefaultencoding("utf8")
-        #s.send("CAP REQ :twitch.tv/membership")        
-        #s.send("CAP REQ :twitch.tv/commands")
-        #s.send("CAP REQ :twitch.tv/tags")      
         sendChanMsg(s, "finnishforce_", "started")
         while 1:
                 start = timer()
@@ -48,7 +43,6 @@ def main_loop():
                 
                 try:
                         getit = s.recv(4096)
-                        #print getit
                         readbuffer = readbuffer + getit
                         temp = string.split(readbuffer, "\n")
                         readbuffer = temp.pop()
@@ -79,13 +73,7 @@ def main_loop():
 
                 if temp != "":
                         if "PRIVMSG" in getit:
-                            tryCommands(s, chan, user, message)
-
-                            #does not work after adding messagecommands.py, need new implementation
-                            #if message.startswith("!softresetbot"):
-                            #    if user.strip().lower() == "finnishforce_":
-                            #        sendChanMsg(s, chan, "DONE!")
-                            #        execfile("/home/pi/Desktop/ForceBotti/Run.py")
+                            tryCommands(s, chan, user, message)                                    
                         
                 end = timer()
                 elapsed = elapsed + (end-start)

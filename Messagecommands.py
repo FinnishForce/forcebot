@@ -28,11 +28,13 @@ def tryCommands(s, chan, user, message):
     from Logger import log
     num = 0
     addc = 0
+    lastchan = ""
+    ismod = 0
     delc = 0
     exists = 0
     worked = 0
-    kaisanetacc = REDACTED
-    kaisanetpass = REDACTED
+    kaisanetacc = 'sue'
+    kaisanetpass = 'less'
     delthis = ""
     chancmds = chan + 'commands.txt'
     with open(chancmds, 'a+') as cmdfile:
@@ -40,6 +42,53 @@ def tryCommands(s, chan, user, message):
     chanmods = chan + 'mods.txt'
     with open(chanmods, 'a+') as modsfile:
         mods = modsfile.readlines()
+
+    try:
+        totalrandom = randint(-5000, 5000)
+        log(str(totalrandom), "random")
+        if (totalrandom == 87):
+            msg = "/timeout " + user + " 87"
+            toLog = "JACKPOT, " + user + " got pamp"
+            log(toLog, "unluckyusers")
+            sendChanMsg(s, chan, msg)
+            sleep(0.2)
+            with open(chanmods, 'a+') as modsfile:
+                 mods = modsfile.readlines()
+            for names in mods:
+                if names.strip().lower() == user.strip().lower():
+                    msg2 = user + " was lucky"
+                    ismod = 1
+                                            
+            if ismod == 0:
+                 msg2 = user + " was unlucky and got timeouted for 87 seconds"
+                 sendChanMsg(s, chan, msg2)
+    except:
+        log("random unluck error", "globalerror")
+
+
+    if message.startswith("!randomviewer"):
+        try:
+            if chan != lastchan:
+                viewerlist = []
+                viewerlist = getViewers(chan)
+                vieweramount = getViewerAmount(chan)
+            random = randint(0, (vieweramount-1) )
+            chosenone = viewerlist[random]
+            
+            resp = "Random viewer from list: " + chosenone
+            
+            sendChanMsg(s, chan, resp)
+            sleep(0.2)
+            resp2 = "/timeout " + chosenone.strip() + " 10"
+            sendChanMsg(s, chan, resp2)
+            lasttime = timer()
+            lastchan = chan
+
+        except:
+            print "Error random viewer"
+            toLog = "error randomviewer"
+            log(toLog, "globalerror")
+            
 
     if message.startswith("!rng"):
         try:
@@ -51,6 +100,7 @@ def tryCommands(s, chan, user, message):
             sendChanMsg(s, chan, resp)
         except:
             print "rng error"
+            log("error rng", "globalerror")
     
     if message.startswith("!joinlobby"):
         try:
@@ -58,13 +108,15 @@ def tryCommands(s, chan, user, message):
             sendChanMsg(s, chan, resp)
         except:
             print "!join error wot"
+            log("error joinlobby", "globalerror")
     
     if message.startswith("!botjoin"):
         try:
             joinhere = user.strip()
             joinChan(s, joinhere)                                                
         except:
-            print "joinchan in mainloop error"
+            print "botjoin error"
+            log("error botjoin", "globalerror")
 
     if message.startswith("!botquit"):
         try:
@@ -74,7 +126,8 @@ def tryCommands(s, chan, user, message):
             quitChan(s, quithere)
 
         except:
-            print "quitchan in mainloop error"
+            print "botquit error"
+            log("error botquit", "globalerror")
 
     if message.startswith("!cpustats"):
         try:
@@ -94,12 +147,14 @@ def tryCommands(s, chan, user, message):
                     sendChanMsg(s, chan, "restarting bot, brb 1-2 min")
                     restartbot()
                 except:
-                    print "error in restartbotrun.py"   
+                    print "error in restartbotrun.py"
+                    log("error restartbot", "globalerror")
                     
     if message.startswith("!uptime"):
         try:
             uptime = getUptime(chan)
-            sendChanMsg(s, chan, uptime)
+            msg = chan + " has been online for " + uptime
+            sendChanMsg(s, chan, msg)
         except:
             log("uptime error", "globalerror")
 
@@ -130,12 +185,25 @@ def tryCommands(s, chan, user, message):
                 sleep(0.1)
         except:
             print "pyramid error"
+            log("error pyramid", "globalerror")
 
     if message.startswith("!updatemods"):
         try:
             updateMods(chan)
         except:
             print "updatemods error"
+            log("error updatemods", "globalerror")
+
+    if message.startswith("!adminspeak"):
+        try:
+            if user == "finnishforce_":
+                a, b = message.split('!adminspeak')
+                b = b.strip()
+                c, m = b.split(' ', 1)
+                sendChanMsg(s, c, m)
+        except:
+            print "error adminspeak"
+            log("error adminspeak", "globalerror")
 
     if message.startswith("!updatecommands"):
         try:
@@ -146,6 +214,7 @@ def tryCommands(s, chan, user, message):
             session.quit()
         except:
             print "updatecommands error"
+            log("error updatecommands", "globalerror")
 
     if message.startswith("!Laddcom") or message.startswith("!laddcom"):
         try:
@@ -190,14 +259,13 @@ def tryCommands(s, chan, user, message):
                                             session.storbinary('STOR susihukka2551commands.txt', file)
                                             file.close()
                                             session.quit()
-                                    sleep(0.1)
                                     break
                         except:
                             msg = "@" + user + " look now,> !addcom !test: test, muista kaksoispisteet ::::"
                             sendChanMsg(s, chan, msg)
         except:
             print "error in laddcom"
-
+            log("error Laddcom", "globalerror")
 
     if message.startswith("!delcom"):
         try:
@@ -246,6 +314,7 @@ def tryCommands(s, chan, user, message):
                             sendChanMsg(s, chan, resp)
         except:
             print "delcom error"
+            log("error delcom", "globalerror")
 
     if message.startswith("!csfind"):
         try:
@@ -260,7 +329,8 @@ def tryCommands(s, chan, user, message):
 
             sendChanMsg(s, chan, resp)
         except:
-            print "error in lastgamestats"
+            print "error in csfind"
+            log("error csfind", "globalerror")
 
     if message.startswith("!vac"):
         try:
@@ -275,7 +345,8 @@ def tryCommands(s, chan, user, message):
 
             sendChanMsg(s, chan, resp)
         except:
-            print "error in lastgamestats"
+            print "error in vac"
+            log("error vac", "globalerror")
 
     if message.startswith("!laststats"):
         try:
@@ -283,6 +354,7 @@ def tryCommands(s, chan, user, message):
             sendChanMsg(s, chan, resp)
         except:
             print "laststat error hapnd"
+            log("error laststats", "globalerror")
 
     if message.startswith("!tussarikills"):
         try:      
@@ -299,6 +371,7 @@ def tryCommands(s, chan, user, message):
             sendChanMsg(s, chan, resp)
         except:
             print "tussarikill (hukka) error hapnd"
+            log("error tussarikills", "globalerror")
 
     if message.startswith("!mytussarikills"):
         try:      
@@ -315,6 +388,7 @@ def tryCommands(s, chan, user, message):
             sendChanMsg(s, chan, resp)
         except:
             print "tussarikill (general) error hapnd"
+            log("error mytussarikills", "globalerror")
 
     if message.startswith("!kills"):
         try:      
@@ -332,6 +406,7 @@ def tryCommands(s, chan, user, message):
             sendChanMsg(s, chan, resp)
         except:
             print "kills (hukka) error hapnd"
+            log("error kills", "globalerror")
 
     if message.startswith("!mykills"):
         try:      
@@ -348,13 +423,17 @@ def tryCommands(s, chan, user, message):
 
             sendChanMsg(s, chan, resp)
         except:
-            print "mykills error hapnd"        
+            print "mykills error hapnd"
+            log("error mykills", "globalerror")
 
 
     if message.startswith("!color "):
-        a, b = message.split('!color')
-        saythis = "/color " + b.strip()
-        sendChanMsg(s, chan, saythis)
+        try:
+            a, b = message.split('!color')
+            saythis = "/color " + b.strip()
+            sendChanMsg(s, chan, saythis)
+        except:
+            log("error color", "globalerror")
 
 
 
@@ -395,6 +474,8 @@ def tryCommands(s, chan, user, message):
                         if exists != 1:
                                 cmdfile.write('\n'.encode('utf8') + cmd.encode('utf8') + '\n\n'.encode('utf8') + action.encode('utf8') + '\n'.encode('utf8'))
                                 toLog = user + " added command " + cmd + " that does action: " + action.strip()
+                                resp = "added " + cmd + " : " + action
+                                sendChanMsg(s, chan, resp)
                                 info = chan + "reports"
                                 log(toLog, info)
                                 if chan.strip() == "susihukka2551":
@@ -404,10 +485,10 @@ def tryCommands(s, chan, user, message):
                                     session.storbinary('STOR susihukka2551commands.txt', file)
                                     file.close()
                                     session.quit()
-                                sleep(0.1)
                                 break
                     except:
                         print "error"
+                        log("error addcom", "globalerror")
 
 
     if message.startswith("!addmod"):
@@ -430,7 +511,6 @@ def tryCommands(s, chan, user, message):
                             toLog = user + " added mod " + b
                             info = chan + "reports"
                             log(toLog, info)
-                            sleep(0.1)
                             break
                     except:
                         msg = "@" + user + "check commands how to use !addmod or error was happeneds,,"
@@ -468,6 +548,7 @@ def tryCommands(s, chan, user, message):
                     log(toLog, info)
                 except:
                     print "error in !delmod"
+                    log("error delmod", "globalerror")
 
 
     #for songs in sr:
@@ -504,10 +585,11 @@ def tryCommands(s, chan, user, message):
                                     sendChanMsg(s, chan, uloste)
                             else:
                                     print "someone tried to use onlymod command"
-
+                if '$uptime$' in uloste:
+                    uloste = uloste.replace('$uptime$', getUptime(chan))
+                    
                 if modonlycmd != 1: 
                     sendChanMsg(s, chan, uloste)
-                    sleep(0.1)
                     break
 
             if commands[num].strip().lower() == a.strip().lower():
@@ -525,6 +607,8 @@ def tryCommands(s, chan, user, message):
                                 sendChanMsg(s, chan, uloste)
                             else:
                                 print "someone tried to use onlymod command"
+                    if '$uptime$' in uloste:
+                        uloste = uloste.replace('$uptime$', getUptime(chan))
 
                     if modonlycmd != 1: 
                             sendChanMsg(s, chan, uloste)
