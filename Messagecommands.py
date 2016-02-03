@@ -149,7 +149,7 @@ def tryCommands(s, chan, user, message):
                 except:
                     print "error in restartbotrun.py"
                     log("error restartbot", "globalerror")
-                    
+    '''                
     if message.startswith("!uptime"):
         try:
             uptime = getUptime(chan)
@@ -157,7 +157,7 @@ def tryCommands(s, chan, user, message):
             sendChanMsg(s, chan, msg)
         except:
             log("uptime error", "globalerror")
-
+    '''
     if message.startswith("!pyramid"):
         try:
             if user.strip() == "finnishforce_" or user.strip() == chan.strip():
