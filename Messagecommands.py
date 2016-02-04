@@ -28,7 +28,6 @@ def tryCommands(s, chan, user, message):
     from Logger import log
     num = 0
     addc = 0
-    lastchan = ""
     ismod = 0
     delc = 0
     exists = 0
@@ -51,7 +50,6 @@ def tryCommands(s, chan, user, message):
             toLog = "JACKPOT, " + user + " got pamp"
             log(toLog, "unluckyusers")
             sendChanMsg(s, chan, msg)
-            sleep(0.2)
             with open(chanmods, 'a+') as modsfile:
                  mods = modsfile.readlines()
             for names in mods:
@@ -68,21 +66,16 @@ def tryCommands(s, chan, user, message):
 
     if message.startswith("!randomviewer"):
         try:
-            if chan != lastchan:
-                viewerlist = []
-                viewerlist = getViewers(chan)
-                vieweramount = getViewerAmount(chan)
+            viewerlist = []
+            viewerlist, vieweramount = getViewers(chan)
             random = randint(0, (vieweramount-1) )
             chosenone = viewerlist[random]
             
             resp = "Random viewer from list: " + chosenone
             
             sendChanMsg(s, chan, resp)
-            sleep(0.2)
             resp2 = "/timeout " + chosenone.strip() + " 10"
             sendChanMsg(s, chan, resp2)
-            lasttime = timer()
-            lastchan = chan
 
         except:
             print "Error random viewer"
@@ -164,22 +157,16 @@ def tryCommands(s, chan, user, message):
                 a, b = message.split('!pyramid')
                 temp = b
                 sendChanMsg(s, chan, temp)
-                sleep(0.1)
                 temp = b+b
                 sendChanMsg(s, chan, temp)
-                sleep(0.1)
                 temp = b+b+b
                 sendChanMsg(s, chan, temp)
-                sleep(0.1)
                 temp = b+b+b+b
                 sendChanMsg(s, chan, temp)
-                sleep(0.1)
                 temp = b+b+b
                 sendChanMsg(s, chan, temp)
-                sleep(0.1)
                 temp = b+b
                 sendChanMsg(s, chan, temp)
-                sleep(0.1)
                 temp = b 
                 sendChanMsg(s, chan, temp)
                 sleep(0.1)
@@ -446,7 +433,6 @@ def tryCommands(s, chan, user, message):
                         c, d = b.split(' ', 1)
                         if c.startswith("!") == False:
                             c = '!' + c
-                        #c = '!' + c # this is useless after fixing bug
                         cmd = c.decode('utf8')
                         if cmd.endswith(':'):
                             cmd = cmd.replace(':', '')
@@ -459,13 +445,10 @@ def tryCommands(s, chan, user, message):
                                 response = ("Command already exists " + commands[addc].strip() + " = " + commands[addc+2].strip() + " please !delcom " + commands[addc].strip() + " first")
                                 exists = 1
                                 sendChanMsg(s, chan, response)
-                                break
-                                
                             if commands[addc].strip().lower().decode('utf8') == action.strip().lower():
                                 response = ("Same action already exists in command " + commands[addc-2].strip() + " = " + commands[addc].strip() + " please !delcom " + commands[addc-2].strip() + " first")
                                 exists = 1
                                 sendChanMsg(s, chan, response)
-                                break
                             addc = addc + 1
                                 
                         if action.startswith("!"):
@@ -485,7 +468,6 @@ def tryCommands(s, chan, user, message):
                                     session.storbinary('STOR susihukka2551commands.txt', file)
                                     file.close()
                                     session.quit()
-                                break
                     except:
                         print "error"
                         log("error addcom", "globalerror")
@@ -503,7 +485,7 @@ def tryCommands(s, chan, user, message):
                                 response = ("Mod is already on list")
                                 exists = 1
                                 sendChanMsg(s, chan, response)
-                                break
+                                
                             addc = addc + 1
                                 
                         if exists != 1:
@@ -511,11 +493,9 @@ def tryCommands(s, chan, user, message):
                             toLog = user + " added mod " + b
                             info = chan + "reports"
                             log(toLog, info)
-                            break
                     except:
-                        msg = "@" + user + "check commands how to use !addmod or error was happeneds,,"
                         sendChanMsg(s, chan, msg)
-                        break
+                        
     
     if message.startswith("!delmod"):
         with open(chanmods, 'a+') as modsfile:
