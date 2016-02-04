@@ -255,6 +255,7 @@ def getViewers(chan):
                 resp = urllib2.urlopen(req)
                 page = json.load(resp)
                 viewers = []
+                amount = page['chatter_count']
                 for entry in page['chatters']['moderators']:
                         viewers.append(entry)
                 for entry in page['chatters']['staff']:
@@ -266,23 +267,11 @@ def getViewers(chan):
                 for entry in page['chatters']['viewers']:
                         viewers.append(entry)
                         
-                return viewers
+                return viewers, amount
 
                 
         except:
                 print "getviewers error"
 
-
-def getViewerAmount(chan):
-        try:
-                url = ("https://tmi.twitch.tv/group/user/" + chan + "/chatters")
-                req = urllib2.Request(url)
-                resp = urllib2.urlopen(req)
-                page = json.load(resp)
-                amount = page['chatter_count']
-
-                return amount
-        except:
-                print "getvieweramount error"
 
                 
