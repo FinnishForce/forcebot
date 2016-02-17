@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import json
 import urllib
 import urllib2
@@ -6,7 +7,12 @@ import re
 import websocket
 from datetime import datetime, timedelta, date, time
 from time import sleep
-steamapikey = "xyz"
+import wikia
+import wikipedia
+import requests
+import codecs
+from Settings import *
+
 
 def getSteamStats(steamid):
         try:
@@ -100,7 +106,10 @@ def getUptime(chan):
                 startdate = datetime.strptime(started, timeFormat)
                 current = datetime.utcnow()
                 combined = current - startdate - timedelta(microseconds=current.microsecond)
-                return str(combined)
+                combined = str(combined)
+                part1, part2, part3 = combined.split(":")
+                completed = part1 + "h " + part2 + "m " + part3 + "s"
+                return completed
 
         except:
                 print "getuptime api.py error" + datetime.utcnow()
@@ -140,6 +149,13 @@ def updateMods(chan):
 
 def restartbot():
     command = "/usr/bin/sudo /sbin/shutdown -r now"
+    import subprocess
+    process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
+    output = process.communicate()[0]
+    print output
+
+def whitelist(domain):
+    command = "/usr/bin/sudo whitelist.sh" + domain
     import subprocess
     process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
     output = process.communicate()[0]
@@ -275,3 +291,165 @@ def getViewers(chan):
 
 
                 
+def getWikiaUrl(site, title):
+        try:
+                if site == "lolwiki":
+                        site = "leagueoflegends"
+                elif site == "rswiki":
+                        site = "2007.runescape"
+                elif site == "hswiki":
+                        site = "hearthstone"
+                elif site == "rsfi":
+                        site = "fi.runescape"
+                search = wikia.search(site, title)
+                title = search[0]
+                page = wikia.page(site, title)
+		url = page.url
+		url = url.replace(" ", "_")
+                return urllib2.quote(url, safe="http://")
+	except:
+		print "api wikiaurl error"
+
+
+def getAnyWikiaUrl(site, title):
+        try:
+                search = wikia.search(site, title)
+                title = search[0]
+                page = wikia.page(site, title)
+		url = page.url
+		url = url.replace(" ", "_")
+                return urllib2.quote(url, safe="http://")
+	except:
+		print "api anywikiurl error"
+
+
+def getWikipediaUrl(title, lang):
+	try:
+		wikipedia.set_lang(lang)
+		search = wikipedia.search(title)
+		title = search[0]
+		page = wikipedia.page(title)
+		print page.url
+		print page.url.encode("utf8")
+		url = page.url
+		url.replace(" ", "_")
+		url = url.replace("(", "%28")
+		url = url.replace(")", "%29")
+		return url, wikipedia.summary(title, sentences=1)
+	except:
+		print "wikipedia error"
+
+
+def getLeagueSummonerId(server, name):
+        try:
+                url = ("https://" + server + ".api.pvp.net/api/lol/" + server + "/v1.4/summoner/by-name/" + name + "?api_key=" + lolapikey)
+                req = urllib2.Request(url)
+                resp = urllib2.urlopen(req)
+                page = json.load(resp)
+                summonerid = page[name]['id']
+                return summonerid
+        except:
+                print "getlolsummonerid error"
+
+
+def getLeagueLastGame(server, name, summonerid):
+        try:
+                url = ("https://" + server + ".api.pvp.net/api/lol/" + server + "/v1.3/game/by-summoner/" + summonerid + "/recent?api_key=" + lolapikey)
+                req = urllib2.Request(url)
+                resp = urllib2.urlopen(req)
+                page = json.load(resp)
+                stats = page['games'][0]['stats']
+                try:
+                        chid = page['games'][0]['championId']
+                        gametype = page['games'][0]['subType']
+                except:
+                        gametype = "RANKED_SOLO_5x5"
+                champion = getLeagueChampion(chid)
+                if gametype == "RANKED_SOLO_5x5":
+                        gametype = "Ranked Solo"
+
+                try:
+                        position = stats['playerPosition']
+                except:
+                        position = 0
+                if position == 1:
+                        position = "Top"
+                elif position == 2:
+                        position = "Mid"
+                elif position == 3:
+                        position = "Jungle"
+                elif position == 4:
+                        position = "Bot"
+                
+                assists = stats['assists']
+                kills = stats['championsKilled']
+                try:
+                        deaths = stats['numDeaths']
+                except:
+                        deaths = 0
+                dmgToChampions = stats['totalDamageDealtToChampions']
+                result = stats['win']
+                if result == True:
+                        result = "Win"
+                elif result == False:
+                        result = "Lose"
+                try:
+                        largestSpree = stats['largestKillingSpree']
+                except:
+                        largestSpree = 0
+                try:
+                        largestMulti = stats['largestMultiKill']
+                except:
+                        largestMulti = 0
+                try:
+                        level = stats['level']
+                except:
+                        level = 0
+                timePlayed = stats['timePlayed']
+                        
+                timeFormat = "T%M:%SZ"
+                try:
+                        timePlayed = datetime.strptime(str(timePlayed), timeFormat)
+                        print timePlayed
+                except:
+                        timePlayed = 0
+                response = name + "'s last game: " + result + " " +  position + " " +  gametype + "Dmg to champions: " + str(dmgToChampions) + " KDA: " + str(kills) + "/" + str(deaths) + "/" + str(assists) + " largest killing spree: " + str(largestSpree) + " largest multikill: " + str(largestMulti)
+                return response
+        except:
+                print "getlollastgame error"
+
+
+
+def getLeagueChampion(chid):
+        try:
+                url = ("https://global.api.pvp.net/api/lol/static-data/euw/v1.2/champion/" + chid + "?api_key=" + lolapikey)
+                req = urllib2.Request(url)
+                resp = urllib2.urlopen(req)
+                page = json.load(resp)
+
+                chname = page['name']
+
+                return chname
+        except:
+                print "error leaguechampion"
+
+
+
+
+
+
+
+
+                
+
+
+
+
+
+
+
+
+
+
+
+        

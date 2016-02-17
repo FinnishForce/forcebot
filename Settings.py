@@ -1,6 +1,11 @@
 HOST = "irc.twitch.tv"
 PORT = 6667
-PASS = "your_own_twitch_oauth"
-IDENT = "your_bot_name"
-CHANNEL = "where_you_want_to_connect"
-
+PASS = "oauth:ouroauthkey"
+IDENT = "botname"
+CHANNEL = "channel"
+steamapikey = "yoursteamapikey"
+lolapikey = "yourlolapikey"
+kaisanetacc = ''
+kaisanetpass = ''
+owner = "botowner"
+ftpserver = 'ftpserver'

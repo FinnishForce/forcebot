@@ -2,16 +2,18 @@ import string
 
 def getUser(line):
    try:
-	separate = line.split(":", 2)
-	user = separate[1].split("!", 1)[0]
+	separate = line.split(".tmi.twitch.tv PRIVMSG #")
+	user = separate[0].split("@", 4)
+	user = user[2]
 	return user
    except:
 	print "Getuser error"
 
 def getMessage(line):
    try:
-	separate = line.split(":", 2)
-	message = separate[2]
+        separate = line.split(".tmi.twitch.tv PRIVMSG #")
+        message = separate[1].split(" :", 1)
+	message = message[1]
 	return message
    except:
 	print "Getmessage error"
@@ -24,3 +26,19 @@ def getChannel(line):
 	return channel
    except:
 	print "getchannel error"
+
+def getMod(line):
+   try:
+      separate = line.split(";", 6)
+      sep2 = separate[3]
+
+      if sep2 == "mod=1":
+         return "ok"
+      elif sep2 == "mod=0":
+         return "no"
+      else:
+         print "this shouldn't happen (getmod)"
+
+   except:
+      print "getmod error"
+      
