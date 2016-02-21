@@ -48,7 +48,7 @@ def sendMessage(s, message):
 	s.send(messageTemp + "\r\n")
 	time = datetime.now().strftime('%d-%m-%Y %H:%M:%S')
 	sleep(0.5)
-	toLog = "Forcebotti: " + message.decode('utf8')
+	toLog = IDENT + ": " + message.decode('utf8')
 	log(toLog, CHANNEL)
     except:
 	print "sendmessage error"

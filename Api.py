@@ -12,6 +12,7 @@ import wikipedia
 import requests
 import codecs
 from Settings import *
+import random
 
 
 def getSteamStats(steamid):
@@ -87,8 +88,9 @@ def getSteamStats(steamid):
                 return resp
                                 
                 
-        except:
-                print "getSteamStats api.py error"
+        except Exception, e:
+                print "getSteamStats api.py error "
+                print e
 
 def getUptime(chan):
 
@@ -111,8 +113,9 @@ def getUptime(chan):
                 completed = part1 + "h " + part2 + "m " + part3 + "s"
                 return completed
 
-        except:
-                print "getuptime api.py error" + datetime.utcnow()
+        except Exception, e:
+                print "getuptime api.py error "
+                print e
 
 def updateMods(chan):
         try:    
@@ -174,8 +177,9 @@ def convertToSteam64(vanity):
                         return steam64id
                 else:
                         print "vanity url not found"
-        except:
-                print "error in convertToSteam64"
+        except Exception, e:
+                print "error in convertToSteam64 "
+                print e
 
 def getTussariKills(steamid):
         try:
@@ -189,8 +193,9 @@ def getTussariKills(steamid):
                 playerName = getPlayerName(steamid)
                 resp = playerName + " has " + str(novakills) + " kills with tussari"
                 return resp
-        except:
-                print "tussarikills error"
+        except Exception, e:
+                print "tussarikills error "
+                print e
 
 def getPlayerName(steamid):
         try:
@@ -203,8 +208,9 @@ def getPlayerName(steamid):
                         playerName = entry['personaname']
                 return playerName
                 
-        except:
-                print "error in getPlayerName"
+        except Exception, e:
+                print "error in getPlayerName "
+                print e
 
 
 def getPlayerBans(steamid):
@@ -229,8 +235,9 @@ def getPlayerBans(steamid):
                         
                 resp = "User " + playerName + " has " + str(vacs) + " VAC bans and " + str(gamebans) +" game bans. " + "Trade ban status: "  + str(ecoban) + ". " + str(lastban)
                 return resp
-        except:
-                print "error in getPlayerBans"
+        except Exception, e:
+                print "error in getPlayerBans "
+                print e
                         
 
 def getKills(steamid, wpn):
@@ -247,8 +254,9 @@ def getKills(steamid, wpn):
                 playerName = getPlayerName(steamid)
                 resp = playerName + " has " + str(kills) + " kills with " + wpn
                 return resp
-        except:
-                print "getkills error"
+        except Exception, e:
+                print "getkills error "
+                print e
 
 
 def getJoin():
@@ -260,34 +268,56 @@ def getJoin():
                                 return "Joining not possible at the moment."
                         else:
                                 return link.get('href')
-        except:
+        except Exception, e:
+                print "getjoin error "
+                print e
                 return "Joining not possible at the moment."
 
 
 def getViewers(chan):
         try:
-                url = ("https://tmi.twitch.tv/group/user/" + chan + "/chatters")
-                req = urllib2.Request(url)
-                resp = urllib2.urlopen(req)
-                page = json.load(resp)
-                viewers = []
-                amount = page['chatter_count']
-                for entry in page['chatters']['moderators']:
-                        viewers.append(entry)
-                for entry in page['chatters']['staff']:
-                        viewers.append(entry)
-                for entry in page['chatters']['admins']:
-                        viewers.append(entry)
-                for entry in page['chatters']['global_mods']:
-                        viewers.append(entry)
-                for entry in page['chatters']['viewers']:
-                        viewers.append(entry)
-                        
-                return viewers, amount
+                errors = 0
+                while(errors <= 10):
+                        try:
+                                url = ("https://tmi.twitch.tv/group/user/" + chan + "/chatters")
+                                req = urllib2.Request(url)
+                                resp = urllib2.urlopen(req, timeout=10)
+                                page = json.load(resp)
+                                viewers = []
+                                amount = page['chatter_count']
+                                for entry in page['chatters']['moderators']:
+                                        viewers.append(entry)
+                                for entry in page['chatters']['staff']:
+                                        viewers.append(entry)
+                                for entry in page['chatters']['admins']:
+                                        viewers.append(entry)
+                                for entry in page['chatters']['global_mods']:
+                                        viewers.append(entry)
+                                for entry in page['chatters']['viewers']:
+                                        viewers.append(entry)
+
+                                #try:
+                                #        if owner in viewers:
+                                #                viewers = viewers.remove(owner)
+                                #        if IDENT in viewers:
+                                #                viewers = viewers.remove(IDENT)
+                                #except Exception, e:
+                                #        print "getviewers remove attempt failed"
+                                #        print e
+				
+                                #print viewlist
+				random.shuffle(viewers)
+                                return viewers, amount
+                        except Exception, e:
+                                print "errors: " + str(errors)
+                                print e
+                                sleep(0.5)
+                                errors += 1
 
                 
-        except:
-                print "getviewers error"
+        except Exception, e:
+                print "getViewers error "
+                print e
 
 
                 
@@ -433,9 +463,18 @@ def getLeagueChampion(chid):
         except:
                 print "error leaguechampion"
 
-
-
-
+def getTitle(chan):
+        try:
+                url = ("https://api.twitch.tv/kraken/channels/" + chan)
+                req = urllib2.Request(url)
+                resp = urllib2.urlopen(req)
+                page = json.load(resp)
+                title = page['status']
+                return title
+        except Exception, e:
+                print "error gettitle "
+                print e
+                
 
 
 

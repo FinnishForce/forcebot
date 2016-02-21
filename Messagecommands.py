@@ -5,6 +5,19 @@ from subprocess import PIPE, Popen
 from random import randint
 import psutil
 import signal
+import pickle
+
+def refreshCmds():
+  with open("joins.txt", 'a+') as joinsfile:
+    joins = joinsfile.readlines()
+
+  dik = {}
+
+  for i in range(len(joins)):
+    dik.update({joins[i].strip() : ""})
+    dik2 = {joins[i].strip() : json.load(open(joins[i].strip()+"commands", "r"))}
+    dik.update(dik2)
+
 
 from Api import *
 from Socket import *
@@ -12,12 +25,12 @@ from Read import *
 
 def readPidFile():
   with open('my_pid', 'r') as f:
-  	pid = f.read()
+        pid = f.read()
   return pid
 
 def writeQuitFile(chan):
   with open('quited', 'w') as f:
-  	f.write(chan)
+        f.write(chan)
 
 def get_cpu_temperature():
     process = Popen(['vcgencmd', 'measure_temp'], stdout=PIPE)
@@ -33,12 +46,12 @@ def tryCommands(s, chan, user, modstatus, message):
     import select
     import fileinput
     from timeit import default_timer as timer
-    from time import sleep, time
+    from time import sleep, time, mktime
     from datetime import datetime, timedelta
     from Init import joinRoom
     from Logger import log
-    from Settings import kaisanetacc, kaisanetpass, ftpserver
-	
+    from Settings import kaisanetacc, kaisanetpass, ftpserver, IDENT, owner
+        
     num = 0
     addc = 0
     ismod = 0
@@ -47,13 +60,58 @@ def tryCommands(s, chan, user, modstatus, message):
     worked = 0
     approved = [owner, 'mmorz', 'bulftrik']
     
-    delthis = ""
-    chancmds = chan + 'commands.txt'
-    with open(chancmds, 'a+') as cmdfile:
-        commands = cmdfile.readlines()
-    chanmods = chan + 'mods.txt'
-	
+    delthis = ""      
 
+    if message.startswith('!amount '):
+      try:
+        
+        try:
+          a, lookup = message.split("!amount ")
+        except:
+          print "error"
+          
+        num = 0
+        
+        with open(chan+'log.txt', 'r') as searchFile:
+	  first_line = searchFile.readlines()[2]
+	  with open(chan+'log.txt', 'r') as file:
+	   for line in file:
+		if lookup.lower() in line.lower():
+		  num = num + line.lower().count(lookup.lower())
+          
+          #first_line = searchFile.readlines()[2]
+          timestring1, timestring2, b = first_line.split(' ', 2)
+          timestring = timestring1 + " " + timestring2
+          
+          timestamp = datetime.now() - datetime.strptime(timestring, "%d-%m-%Y %H:%M:%S" )
+          
+	  timestamp, useless= str(timestamp).split('.')
+	  t1, t2, t3 = timestamp.split(":")
+	  timestamp = t1 + "h " + t2 + "m " + t3 + "s "
+          resp =  str(lookup) + " count during last " + str(timestamp) + ": " + str(num)
+          sendChanMsg(s, chan, resp)
+      except Exception, e:
+        print "!amount error"
+        print e
+
+
+    if message.startswith('!title'):
+      try:
+        try:
+          a, thisChan = message.split("!title ")
+        except:
+          thisChan = chan
+
+        title = getTitle(thisChan)
+        resp = "[" + thisChan + "] " + title
+        sendChanMsg( s, chan, resp )
+      except Exception, e:
+        print "!title error "
+        print e
+    
+    if ("word1" and  "word2") in message:
+      sendChanMsg(s, owner, message)
+    
     if message.startswith('!modtest'):
         if modstatus =='"ok' or user == chan or user in approved:
             sendChanMsg(s, chan, "ok")
@@ -105,7 +163,7 @@ def tryCommands(s, chan, user, modstatus, message):
         except:
             print "lolid error"
             
-    if message == "!bonus":
+    if message.startswith('!bonus'):
         try:
             sendChanMsg(s, chan, "PogChamp ?")
             sleep(2)
@@ -169,16 +227,34 @@ def tryCommands(s, chan, user, modstatus, message):
         try:
             viewerlist = []
             viewerlist, vieweramount = getViewers(chan)
-            random = randint(0, (vieweramount-1) )
-            chosenone = viewerlist[random]
-            
-            resp = "Random viewer from list: " + chosenone.strip()
-            sendChanMsg(s, chan, resp)
-            resp2 = "/timeout " + chosenone.strip() + " 10"
-            sendChanMsg(s, chan, resp2)
+	    try:
+		viewerlist.remove(owner)
+		viewerlist.remove(IDENT)
+		vieweramount -= 2
+	    except Exception, e:
+		print "viewerlist remove error"
+		print e
+            chosenone = random.choice(viewerlist) #randint(0, (vieweramount-1) )
+            #chosenone = viewerlist[random]
+		
+	    
+            #print viewerlist, vieweramount
+            viewers = ', '.join(viewerlist)
 
-        except:
+
+            chance = ( 1.0/float(vieweramount) ) * 100
+            resp0 = "Viewers in raffle: " + str(vieweramount) + ", chance to get chosen: " + str( round(chance,5) ) + "%"
+            sendChanMsg(s, chan, resp0)
+            
+            
+            resp = "Random viewer from list: " + chosenone
+            sendChanMsg(s, chan, resp)
+            #resp2 = "/timeout " + chosenone.strip() + " 10"
+            #sendChanMsg(s, chan, resp2)
+
+        except Exception, e:
             print "Error random viewer"
+	    print e
             toLog = "error randomviewer"
             log(toLog, "globalerror")
             
@@ -189,10 +265,12 @@ def tryCommands(s, chan, user, modstatus, message):
             killthis = readPidFile()
             killthis = int(killthis)
             os.kill(killthis, 15)
-            subprocess.call(["cd /path/to/bot"], shell=True)
+            sendChanMsg(s, chan, "restarting...")
+            subprocess.call(["cd /home/pi/Desktop/ForceBotti"], shell=True)
             subprocess.call(["sudo python Run.py"], shell=True)
-        except:
+        except Exception, e:
             print "softreseterror"
+	    print e
             
     if message.startswith("!rng"):
         try:
@@ -227,22 +305,27 @@ def tryCommands(s, chan, user, modstatus, message):
     
     if message.startswith("!botjoin"):
         try:
+          try:
+            a, joinhere = message.split("!botjoin ")
+          except:
             joinhere = user
             resp = ("joined #" + joinhere)
             sendChanMsg(s, chan, resp)
 
-            joinChan(s, joinhere)                                                
+          joinChan(s, joinhere)                                                
         except:
             print "botjoin error"
             log("error botjoin", "globalerror")
 
     if message.startswith("!botquit"):
         try:
+          try:
+            a, quithere = message.split("!botquit ")
+          except:
             quithere = user
             resp = ("leaving from #" + quithere + ", goodbye")
             sendChanMsg(s, chan, resp)
-            quitChan(s, quithere)
-
+          quitChan(s, quithere)
         except:
             print "botquit error"
             log("error botquit", "globalerror")
@@ -330,8 +413,8 @@ def tryCommands(s, chan, user, modstatus, message):
                             c = '!' + c
                             cmd = c.decode('utf8')
                             action = d.decode('utf8')
-			    cmd = cmd.strip().lower()
-			    action = action.strip().lower()
+                            cmd = cmd.strip().lower()
+                            action = action.strip().lower()
 
                             for sueless in commands:
                                     if commands[addc].strip().lower().decode('utf8') == cmd:
@@ -371,55 +454,6 @@ def tryCommands(s, chan, user, modstatus, message):
             print "error in laddcom"
             log("error Laddcom", "globalerror")
 
-    if message.startswith("!delcom"):
-        try:
-            with open(chancmds, 'a+') as cmdfile:
-                num = 0
-                pois1 = 0
-                pois2 = 0
-                if modstatus == "ok":
-                        a, b = message.split('!delcom ', 1)
-                        if b.startswith("!") == False:
-                            b = '!' + b
-                        poistettava = b.strip().lower()
-                        for sueless in commands:
-                            if commands[num].strip().lower() == poistettava:
-                                    delthis = commands[num+2]
-                            num = num + 1
-
-
-                        for linja in fileinput.input(chancmds, inplace=True):
-                            if (poistettava == linja.strip().lower()) and pois1 == 0:
-                                    pois1 = 1
-                                    continue
-                            print linja,
-                        fileinput.close()
-
-                        delthis = delthis.strip().lower()
-                        for linja2 in fileinput.input(chancmds, inplace=True):
-                            if (delthis == linja2.strip().lower()) and pois2 == 0:
-                                    pois2 = 1
-                                    continue
-                            print linja2,
-
-                        fileinput.close()
-
-                        if pois1 == 1 and pois2 == 1:
-                          if chan == "susihukka2551":
-                              cmdfile.close()
-                              session = ftplib.FTP(ftpserver, kaisanetacc, kaisanetpass)
-                              file = open('susihukka2551commands.txt', 'rb')
-                              session.storbinary('STOR susihukka2551commands.txt', file)
-                              file.close()
-                              session.quit()
-                          toLog = user + " deleted command " + poistettava + " , action: " + delthis
-                          resp = "deleted " + poistettava + " : " + delthis
-                          info = chan + "reports"
-                          log(toLog, info)
-                          sendChanMsg(s, chan, resp)
-        except:
-            print "delcom error"
-            log("error delcom", "globalerror")
 
     if message.startswith("!csfind"):
         try:
@@ -542,126 +576,3 @@ def tryCommands(s, chan, user, modstatus, message):
 
 
 
-    if message.startswith("!addcom"):
-        with open(chancmds, 'a+') as cmdfile:
-                if modstatus == "ok":
-                    try:
-                        a, b = message.split('!addcom ', 1)
-                        c, d = b.split(' ', 1)
-                        if c.startswith("!") == False:
-                            c = '!' + c
-                        cmd = c.decode('utf8')
-                        if cmd.endswith(':'):
-                            cmd = cmd.replace(':', '')
-                            sendChanMsg(s, chan, "commandi lisättiin oikein, mutta enää ei tarvitse käyttää kaksoispisteitä commandin addaamiseen. check !commands for more info about this change")
-
-                        action = d.decode('utf8')
-			cmd = cmd.strip().lower()
-			action = action.strip().lower()
-                        for sueless in commands:
-                            if commands[addc].strip().lower().decode('utf8') == cmd:
-                                response = ("Command already exists " + commands[addc].strip() + " = " + commands[addc+2].strip() + " please !delcom " + commands[addc].strip() + " first")
-                                exists = 1
-                                sendChanMsg(s, chan, response)
-                            if commands[addc].strip().lower().decode('utf8') == action:
-                                response = ("Same action already exists in command " + commands[addc-2].strip() + " = " + commands[addc].strip() + " please !delcom " + commands[addc-2].strip() + " first")
-                                exists = 1
-                                sendChanMsg(s, chan, response)
-                            addc = addc + 1
-                                
-                        if action.startswith("!"):
-                                action = action.replace('!', '')
-                                
-                        if exists != 1:
-                                cmdfile.write('\n'.encode('utf8') + cmd.encode('utf8') + '\n\n'.encode('utf8') + action.encode('utf8') + '\n'.encode('utf8'))
-                                toLog = user + " added command " + cmd + " that does action: " + action
-                                resp = "added " + cmd + " : " + action
-                                sendChanMsg(s, chan, resp)
-                                info = chan + "reports"
-                                log(toLog, info)
-                                if chan.strip() == "susihukka2551":
-                                    cmdfile.close()
-                                    session = ftplib.FTP(ftpserver, kaisanetacc, kaisanetpass)
-                                    file = open('susihukka2551commands.txt', 'rb')
-                                    session.storbinary('STOR susihukka2551commands.txt', file)
-                                    file.close()
-                                    session.quit()
-                    except:
-                        print "error"
-                        log("error addcom", "globalerror")
-
-    if message.startswith('!'):
-        num = 0
-        worked = 0
-        modonlycmd = 0
-        try:
-            a, b = message.split(' ', 1)
-            b = b.strip()
-            worked = 1
-        except:
-            a = ""
-            b = ""
-            worked = 0
-
-        for sueless in commands:
-            if commands[num].strip().lower() == message.strip().lower():
-                uloste = commands[num+2]
-
-                if '$user$' in uloste:
-                    uloste = uloste.replace('$user$', user)
-                if '$own$' in uloste:
-                    uloste = uloste.replace('$own$', b)
-                if '$mod$' in uloste:
-                    uloste = uloste.replace('$mod$', "")
-                    modonlycmd = 1
-                    if modstatus == 'ok':
-                        sendChanMsg(s, chan, uloste)
-			break
-                    else:
-                        print "someone tried to use onlymod command"
-
-                if '$uptime$' in uloste:
-                    uloste = uloste.replace('$uptime$', getUptime(chan))
-                if '$random100$' in uloste:
-                    uloste = uloste.replace('$random100$', str( randint(0, 100) ) )
-                if '$d20$' in uloste:
-                    uloste = uloste.replace('$d20$', str( randint(1, 20) ) )
-                if '$d6$' in uloste:
-                    uloste = uloste.replace('$d6$', str( randint(1, 6) ) )
-                  
-                    
-                if modonlycmd != 1: 
-                    sendChanMsg(s, chan, uloste)
-                    break
-	    
-	    num = num + 1
-            #if commands[num].strip().lower() == a.strip().lower():
-            #    if worked == 1:
-            #        uloste = commands[num+2].strip()
-            #        if '$user$' in uloste:
-            #            uloste = uloste.replace('$user$', user)
-            #        if '$own$' in uloste:
-            #            uloste = uloste.replace('$own$', b)
-            #        if '$mod$' in uloste:
-            #            uloste = uloste.replace('$mod$', "")
-            #            modonlycmd = 1
-            #            if modstatus == "ok":
-	    #		    print "action"
-            #                sendChanMsg(s, chan, uloste)
-            #            else:
-            #                print "someone tried to use onlymod command"
-            #        if '$uptime$' in uloste:
-            #            uloste = uloste.replace('$uptime$', getUptime(chan))
-            #        if '$random100$' in uloste:
-            #            uloste = uloste.replace('$random100$', str( randint(0, 100) ) )
-            #        if '$d20$' in uloste:
-            #            uloste = uloste.replace('$d20$', str( randint(1, 20) ) )
-            #        if '$d6$' in uloste:
-            #            uloste = uloste.replace('$d6$', str( randint(1, 6) ) )
-            #        
-            #
-            #        if modonlycmd != 1: 
-            #                sendChanMsg(s, chan, uloste)
-            #        break                                                        
-	    #
-            
