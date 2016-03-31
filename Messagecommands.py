@@ -114,7 +114,7 @@ def tryCommands(s, chan, user, modstatus, message):
     
     if message.startswith('!modtest'):
         if modstatus =='"ok' or user == chan or user in approved:
-            sendChanMsg(s, chan, "ok")
+            sendChanMsg(s, chan, "kuseless mod")
         else:
             sendChanMsg(s, chan, "fail")
             
@@ -272,28 +272,30 @@ def tryCommands(s, chan, user, modstatus, message):
             print "softreseterror"
 	    print e
             
-    if message.startswith("!rng"):
+    if message.startswith("!rng") or message.startswith("!random"):
         try:
+          if message.startswith("!rng"):
             u, a = message.split("!rng ")
-            print u, a
-            a, b = a.split(" ")
-            a = int(a)
-            b = int(b)
+          if message.startswith("!random"):
+            u, a = message.split("!random ")
+          a, b = a.split(" ")
+          a = int(a)
+          b = int(b)
             
-            if a > b and b != 0:
-                b = a*b
-                a = b/a
-                b = b/a
-            elif a > b and b == 0:
-                b = a
-                a = 0
+          if a > b and b != 0:
+              b = a*b
+              a = b/a
+              b = b/a
+          elif a > b and b == 0:
+              b = a
+              a = 0
                 
-            r = randint(int(a), int(b))
-            resp = "You got " + str(r) + " (" + str(int(a)) + "-" + str(int(b)) + ")"
-            sendChanMsg(s, chan, resp)
+          r = randint(int(a), int(b))
+          resp = "You got " + str(r) + " (" + str(int(a)) + "-" + str(int(b)) + ")"
+          sendChanMsg(s, chan, resp)
         except:
-            print "rng error"
-            log("error rng", "globalerror")
+          print "rng error"
+          log("error rng", "globalerror")
     
     if message.startswith("!joinlobby"):
         try:
@@ -307,27 +309,39 @@ def tryCommands(s, chan, user, modstatus, message):
         try:
           try:
             a, joinhere = message.split("!botjoin ")
+	    resp = "joined #" + joinhere
           except:
             joinhere = user
             resp = ("joined #" + joinhere)
-            sendChanMsg(s, chan, resp)
-
-          joinChan(s, joinhere)                                                
-        except:
-            print "botjoin error"
+          sendChanMsg(s, chan, resp)
+	  if joinhere.startswith("#"):
+		joinhere = joinhere.replace("#", '')
+          joinChan(s, joinhere)
+          
+          killthis = readPidFile()
+          killthis = int(killthis)
+          os.kill(killthis, 15)
+          subprocess.call(["cd /home/pi/Desktop/ForceBotti"], shell=True)
+          subprocess.call(["sudo python Run.py"], shell=True)
+                                                
+        except Exception, e:
+            print "botjoin error ", e
             log("error botjoin", "globalerror")
 
     if message.startswith("!botquit"):
         try:
           try:
             a, quithere = message.split("!botquit ")
+	    resp = "leaving from #" + quithere
           except:
             quithere = user
             resp = ("leaving from #" + quithere + ", goodbye")
-            sendChanMsg(s, chan, resp)
+          sendChanMsg(s, chan, resp)
+	  if quithere.startswith("#"):
+		quithere = quithere.replace("#", '')
           quitChan(s, quithere)
-        except:
-            print "botquit error"
+        except Exception, e:
+            print "botquit error ", e
             log("error botquit", "globalerror")
 
     if message.startswith("!cpustats"):

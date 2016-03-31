@@ -2,7 +2,7 @@ import socket
 import fileinput
 from time import sleep
 from Logger import log
-from Settings import HOST, PORT, PASS, IDENT, CHANNEL, IRC, IRCCHAN
+from Settings import *
 from datetime import datetime
 from Read import getChannel
 #time = datetime.now().strftime('%Y-%d-%m %H:%M:%S')
@@ -39,8 +39,8 @@ def openSocket():
 	
 	
 	return s
-    except:
-	print "Opensocket error"
+    except Exception, e:
+	print "Opensocket error ", e
 	
 def sendMessage(s, message):
     try:
@@ -59,10 +59,10 @@ def sendChanMsg(s, chan, message):
 	s.send(messageTemp.strip() + "\r\n")
 	sleep(0.35)
 	time = datetime.now().strftime('%d-%m-%Y %H:%M:%S')
-	toLog = "Forcebotti: " + message.decode('utf8')
+	toLog = IDENT + ": " + message.decode('utf8')
 	log(toLog, chan)
-    except:
-	print "sendmessage error"
+    except Exception, e:
+	print "sendmessage error ", e
 
 def joinChan(s, chan):
     try:
@@ -70,19 +70,19 @@ def joinChan(s, chan):
 	addc = 0
 	chanjoins = 'joins.txt'
         with open(chanjoins, 'a+') as joinsfile:
-        	joins = joinsfile.readlines()
+          joins = joinsfile.readlines()
 	
-	for somethings in joins:
+	  for somethings in joins:
 	        if joins[addc].strip().decode('utf8') == chan.decode('utf8'):
 	        	exists = 1
 		addc = addc + 1
 
-	if exists != 1:
+	  if exists != 1:
 		joinsfile.write(chan.encode('utf8') + '\n'.encode('utf8'))
 	
-	s.send("JOIN #" + str(chan) + "\r\n")
-    except:
-	print "joinchan error"
+	  s.send("JOIN #" + str(chan) + "\r\n")
+    except Exception, e:
+	print "joinchan error ", e
 
 def quitChan(s, chan):
     try:
@@ -101,5 +101,5 @@ def quitChan(s, chan):
 	fileinput.close()
 
 
-    except:
-	print "quitchan error"
+    except Exception, e:
+	print "quitchan error ", e
