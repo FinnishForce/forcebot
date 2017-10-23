@@ -470,6 +470,7 @@ def getTitle(chan):
         try:
                 url = ("https://api.twitch.tv/kraken/channels/" + chan)
                 req = urllib2.Request(url)
+                req.add_header("Client-ID", tclientid)
                 resp = urllib2.urlopen(req)
                 page = json.load(resp)
                 title = page['status']
