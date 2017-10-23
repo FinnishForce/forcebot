@@ -4,8 +4,6 @@ from __future__ import division
 from subprocess import PIPE, Popen
 from random import randint
 import psutil
-import signal
-import pickle
 
 def refreshCmds():
   with open("joins.txt", 'a+') as joinsfile:
@@ -22,6 +20,8 @@ def refreshCmds():
 from Api import *
 from Socket import *
 from Read import *
+from omawikipedia import *
+from osrs_ge import *
 
 def readPidFile():
   with open('my_pid', 'r') as f:
@@ -40,18 +40,33 @@ def get_cpu_temperature():
 def tryCommands(s, chan, user, modstatus, message):
     import os
     import subprocess
-    import sys
-    import ftplib
-    import string
-    import select
-    import fileinput
-    from timeit import default_timer as timer
     from time import sleep, time, mktime
     from datetime import datetime, timedelta
     from Init import joinRoom
     from Logger import log
-    from Settings import kaisanetacc, kaisanetpass, ftpserver, IDENT, owner
-        
+    from Settings import IDENT, owner
+    
+    qlist = ["Varmasti", "Voit luottaa siihen", "Vain juontaja tietää sen", "Melko varmasti",
+	    "Kyllä", "Ei", "En osaa sanoa", "Ehkä, ehkä ei",
+	    "Negative", "Tuohon on pakko sanoa ei", "Epäilen", "Mietippä sitä autisti"]    
+
+    taytelista = [ "ananas",  "anjovis",  "aurajuusto", "sudenliha", "aurinkokuivattu tomaatti",  "banaani",  "basilika",  "bbq",  "broileri",
+                   "cheddarjuusto",  "chili",  "chili (vihreä)",  "chili cheese balls",  "chilimajoneesi",  "chilimajoneesia",  "chorizo",
+                   "curry",  "currymajoneesia",  "edamjuusto",  "fetajuusto",  "herkkusieni",  "härkä",  "jalapeno",  "jalopeno",
+                   "jauheliha",  "juusto",  "juustopizza",  "jäävuorisalaatti",  "kana",  "kanan rintafile",  "kananmuna",  "kananugetteja",
+                   "kapris",  "karamelli",  "katkarapu",  "kebab",  "kebabliha",  "kevytjuusto",  "kinkku",  "kirsikkatomaatti",
+                   "korianteri",  "kuisma", "kuivattu tomaatti",  "kukkakaali",  "kurkku",  "maissi",  "majoneesi",  "makkara",  "maustekurkku",
+                   "maustettu häränliha",  "merilevä",  "mozzarella",  "mozzarella-cheddarjuusto",  "mozzarellajuusto",  "musta oliivi",
+                   "mustapippuri",  "mustekala",  "nachoja",  "naudanjauheliha",  "naudanliha",  "naudanlihasuikale",  "oliivi",  "oregano",
+                   "paahdettu broileri",  "paahdettu pekoni",  "paholaisenhillo",  "paistettu herkkusieni",  "paistettu mehevä lohifilee",
+                   "paistettu okra",  "paistettu sipuli",  "paistettua lampaanlihaa",  "palvikinkku",  "papu",  "parmankinkku",  "parmesanjuusto",
+                   "parsa",  "parsakaali",  "pekoni",  "pepperoni",  "pepperonimakkara",  "persikka",  "peruna",  "pesto",  "pippurimakkara",
+                   "poro",  "punasipuli",  "raikas salaatti",  "ranskalaiset",  "rucola",  "rukulla vihannekset",  "salaatti",  "salami",  "salsa",
+                   "savuporo",  "siitakesieni",  "simpukka",  "sinihomejuusto",  "sipuli",  "sitruunaruoho",  "smetana",  "tabasco",  "talon juusto",
+                   "talon tuorejuusto",  "tofu",  "tomaatti",  "tonnikala",  "tuore basilika",  "tuore herkkusieni",  "tuore munakoiso",
+                   "tuore parsa",  "tuore persilja",  "tuoretomaatti",  "tupla kebabliha",  "tupla-valkosipuli",  "tuplajuusto",  "tuplakatkarapu",
+                   "tuplakebab",  "turkinpippuri",  "valkosipuli",  "vihreäpepperoni",  "vuohenjuusto",  "ylikypsä porsaanliha (pulled pork)",
+                   "tuolijakkara",  "hiirenliha",  "siika",  "mursunliha",  "mousen patenttijuusto",  "paprika" ]
     num = 0
     addc = 0
     ismod = 0
@@ -61,7 +76,12 @@ def tryCommands(s, chan, user, modstatus, message):
     approved = [owner, 'mmorz', 'bulftrik']
     
     delthis = ""      
-
+    if message.startswith('!kysy'):
+	try:
+	    sendChanMsg(s, chan, random.choice(qlist))
+	except Exception, e:
+	    print "error !kysy:", e
+    
     if message.startswith('!amount '):
       try:
         
@@ -73,27 +93,63 @@ def tryCommands(s, chan, user, modstatus, message):
         num = 0
         
         with open(chan+'log.txt', 'r') as searchFile:
-	  first_line = searchFile.readlines()[2]
-	  with open(chan+'log.txt', 'r') as file:
-	   for line in file:
-		if lookup.lower() in line.lower():
-		  num = num + line.lower().count(lookup.lower())
+            first_line = searchFile.readlines()[2]
+            with open(chan+'log.txt', 'r') as file:
+                for line in file:
+                    if lookup.lower() in line.lower():
+                        num = num + line.lower().count(lookup.lower())
+            timestring1, timestring2, b = first_line.split(' ', 2)
+            timestring = timestring1 + " " + timestring2
           
-          #first_line = searchFile.readlines()[2]
-          timestring1, timestring2, b = first_line.split(' ', 2)
-          timestring = timestring1 + " " + timestring2
+            timestamp = datetime.now() - datetime.strptime(timestring, "%d-%m-%Y %H:%M:%S" )
           
-          timestamp = datetime.now() - datetime.strptime(timestring, "%d-%m-%Y %H:%M:%S" )
-          
-	  timestamp, useless= str(timestamp).split('.')
-	  t1, t2, t3 = timestamp.split(":")
-	  timestamp = t1 + "h " + t2 + "m " + t3 + "s "
-          resp =  str(lookup) + " count during last " + str(timestamp) + ": " + str(num)
-          sendChanMsg(s, chan, resp)
+            timestamp, useless= str(timestamp).split('.')
+            t1, t2, t3 = timestamp.split(":")
+            timestamp = t1 + "h " + t2 + "m " + t3 + "s "
+            resp =  str(lookup) + " count during last " + str(timestamp) + ": " + str(num)
+            sendChanMsg(s, chan, resp)
       except Exception, e:
         print "!amount error"
         print e
 
+    if message.startswith('!täytteet'):
+        try:
+            tayteamount = randint(2, 5)
+            tayte = []
+            for x in range(tayteamount):
+                tayte.append(random.choice(taytelista))
+                taytelista.remove(tayte[x])
+            taytteet = ', '.join(tayte)
+            sendChanMsg(s, chan, taytteet)
+        except Exception, e:
+            print "täytteet error"
+            print e
+    
+    if message == '!juoma':
+	try:
+	    nimi, hinta, tyyppi, tuotenumero = getDrink()
+	    resp = nimi + " (" + tyyppi + ") (" + str(hinta) + "€) https://www.alko.fi/tuotteet/" + str(tuotenumero) + "/"
+	    sendChanMsg(s, chan, resp)
+	except Exception, e:
+	    print "!juoma error", e
+
+    if message.startswith('!drinkki '):
+	try:
+	    nimi1, lhinta1, tyyppi1 = getMix()
+	    nimi2, lhinta2, tyyppi2 = getMix()
+	    maara1 = str(randint(1,10))
+	    maara2 = str(randint(1,10))
+	    maara1 = maara1.replace(",", ".")
+	    maara2 = maara2.replace(",", ".")
+	    lhinta1, lhinta2 = lhinta1.replace(",", "."), lhinta2.replace(",", ".")
+	    hinta1 = float(lhinta1) * float(maara1) * 0.01
+	    hinta2 = float(lhinta2) * float(maara2) * 0.01
+	    totalhinta = float(hinta1)+float(hinta2)
+	    totalhinta = str(round(totalhinta, 2))
+	    resp = "{0}cl {1} ({2}) ja {3}cl {4} ({5}), annoksen hinta: {6} €".format(maara1, nimi1, tyyppi1, maara2, nimi2, tyyppi2, totalhinta)
+	    sendChanMsg(s, chan, resp)
+	except Exception, e:
+	    print "drink error", e
 
     if message.startswith('!title'):
       try:
@@ -109,33 +165,14 @@ def tryCommands(s, chan, user, modstatus, message):
         print "!title error "
         print e
     
-    if ("word1" and  "word2") in message:
-      sendChanMsg(s, owner, message)
+    #if ("word1" and "word2") in message:
+    #  sendChanMsg(s, owner, message)
     
     if message.startswith('!modtest'):
-        if modstatus =='"ok' or user == chan or user in approved:
+        if modstatus or user == chan or user in approved:
             sendChanMsg(s, chan, "kuseless mod")
         else:
             sendChanMsg(s, chan, "fail")
-            
-    #print "hello i am " + str(os.getpid())
-
-    try:
-        totalrandom = randint(-500000, 500000)
-        if (totalrandom == 87):
-            msg = "/timeout " + user + " 87"
-            toLog = "JACKPOT, " + user + " got pamp at #" + chan
-            log(toLog, "jackpot")
-            sendChanMsg(s, chan, msg)
-            if modstatus == "ok":
-                msg2 = user + " was lucky"
-                ismod = 1
-                                            
-            if ismod == 0:
-                 msg2 = user + " was unlucky and got timeouted for 87 seconds"
-                 sendChanMsg(s, chan, msg2)
-    except:
-        log("random unluck error", "globalerror")
 
     if message.startswith("!pid"):
         try:
@@ -163,104 +200,151 @@ def tryCommands(s, chan, user, modstatus, message):
         except:
             print "lolid error"
             
-    if message.startswith('!bonus'):
-        try:
-            sendChanMsg(s, chan, "PogChamp ?")
-            sleep(2)
-            sendChanMsg(s, chan, "BrokeBack")
-        except:
-            log("bonuserror", globalerror)
-    
-    if message.startswith("!wikipedia"):
+    if message.startswith("!wikipedia "):
         try:
             a, rest = message.split("!wikipedia ")
             try:
-                title, lang = rest.split("lang:", 1)
+                lang, title = rest.split(" ", 1)
                 title = title.strip()
                 lang = lang.strip()
             except:
                 title = rest.strip()
                 lang = "en"
-            url, summary = getWikipediaUrl(title, lang)
-            resp = url + " : " + summary
-            sendChanMsg(s, chan, resp)
+            
+            sendChanMsg(s, chan, wikipedia_haku(title, lang))
         except:
             print "wikipedia fake error"
 
-    if message.startswith("!wiki"):
+    if message.startswith("!wiki "):
         try:
             a, rest = message.split("!wiki ")
             site, title = rest.split("-", 1)
             resp = getWikiaUrl(site.strip(), title.strip())
             sendChanMsg(s, chan, resp)
-        except:
-            log("error wiki", "globalerror")
+        except Exception, e:
+            print "error at !wiki: "
+            print e
 
-    if message.startswith("!lolwiki"):
+    if message.startswith("!lolwiki "):
         try:
             a, title = message.split("!lolwiki")
             resp = getWikiaUrl("lolwiki", title.strip())
             sendChanMsg(s, chan, resp)
-        except:
-            log("error lolwiki", "globalerror")
+        except Exception, e:
+            print "error at !lolwiki: "
+            print e
 
-    if message.startswith("!rswiki"):
+    if message.startswith("!rswiki "):
         try:
             a, title = message.split("!rswiki")
             title = title.strip()
             resp = getWikiaUrl("rswiki", title)
             sendChanMsg(s, chan, resp)
 
-        except:
-            log("error rswiki", "globalerror")
+        except Exception, e:
+            print "error at !rswiki: "
+            print e
 
-    if message.startswith("!hswiki"):
+    if message.startswith("!hswiki "):
         try:
             a, title = message.split("!hswiki")
             resp = getWikiaUrl("hswiki", title.strip())
             sendChanMsg(s, chan, resp)
-        except:
-            log("error hswiki", "globalerror")
+        except Exception, e:
+            print "error at !hswiki: "
+            print e
 
-            
+    if message.startswith("!randoms"):
+        try:
+            start, end = 1, 20
+            rnd1, rnd2, rnd3 = randint(start, end), randint(start, end), randint(start, end)
+            while rnd1 == rnd2 or rnd1 == rnd3 or rnd2 == rnd3:
+                rnd1, rnd2, rnd3 = randint(start, end), randint(start, end), randint(start, end)
+            sendChanMsg(s, chan, (str(rnd1) + " " + str(rnd2) + " " + str(rnd3)))
+        except Exception, e:
+            print e
+
+    if message.startswith("!followstatus"):            
+	try:
+	    sent = 0
+	    try:
+		asd, name = message.split("!followstatus ")
+		try:
+			name, difchan = name.split(" ", 1)
+			sendChanMsg(s, chan, getFollowStatus(name, difchan))
+			sent = 1
+		except:
+			pass
+		if sent == 0:
+			sent = 1
+			sendChanMsg(s, chan, getFollowStatus(name, chan))
+	    except:
+		pass
+	    if sent == 0:
+		sendChanMsg(s, chan, getFollowStatus(user, chan))
+	    sleep(1)
+	except:
+	    print "followstatus error"
+
+    if message.startswith("!follows") and not message.startswith("!followstatus"):
+        try:
+            sent = 0
+            try:
+                asd, name = message.split("!follows ")
+                try:
+                        name, difchan = name.split(" ", 1)
+                        sendChanMsg(s, chan, getFollowStatus(name, difchan))
+                        sent = 1
+                except:
+                        pass
+                if sent == 0:
+                        sent = 1
+                        sendChanMsg(s, chan, getFollowStatus(name, chan))
+            except:
+                pass
+            if sent == 0:
+                sendChanMsg(s, chan, getFollowStatus(user, chan))
+            sleep(1)
+        except:
+            print "follows error"
+
+
+
     if message.startswith("!randomviewer"):
         try:
             viewerlist = []
             viewerlist, vieweramount = getViewers(chan)
-	    try:
-		viewerlist.remove(owner)
-		viewerlist.remove(IDENT)
-		vieweramount -= 2
-	    except Exception, e:
-		print "viewerlist remove error"
-		print e
-            chosenone = random.choice(viewerlist) #randint(0, (vieweramount-1) )
-            #chosenone = viewerlist[random]
-		
-	    
-            #print viewerlist, vieweramount
-            viewers = ', '.join(viewerlist)
-
+            try:
+                viewerlist.remove(owner)
+                viewerlist.remove(IDENT)
+                vieweramount -= 2
+            except Exception, e:
+                print "viewerlist remove error"
+                print e
+            chosenone = random.choice(viewerlist)
 
             chance = ( 1.0/float(vieweramount) ) * 100
-            resp0 = "Viewers in raffle: " + str(vieweramount) + ", chance to get chosen: " + str( round(chance,5) ) + "%"
+	    followStatus = getFollowStatus(chosenone, chan)
+            resp0 = "Viewers in: " + str(vieweramount) + ", chance to win: " + str( round(chance,2) ) + "%, winner: " + chosenone + " (" + followStatus + ")"
             sendChanMsg(s, chan, resp0)
-            
-            
-            resp = "Random viewer from list: " + chosenone
-            sendChanMsg(s, chan, resp)
-            #resp2 = "/timeout " + chosenone.strip() + " 10"
-            #sendChanMsg(s, chan, resp2)
+	    sleep(1)
 
         except Exception, e:
             print "Error random viewer"
-	    print e
-            toLog = "error randomviewer"
-            log(toLog, "globalerror")
-            
+            print e
+
+    if message.startswith("!rаndomviewer"):
+	try:
+		viewerlist, vieweramount = getViewers(chan)
+		chance = ( 1.0/float(vieweramount) ) * 100
+		resp0 = "Viewers in: " + str(vieweramount) + ", chance to win: " + str( round(chance,2) ) + "%, winner: wetnis"
+		sendChanMsg(s, chan, resp0)
+	except:
+		print "wetnis viewer error"
+
     if message.startswith("!restartbot"):
         try:
-          if (user == owner) or (modstatus == 'ok') or (user == chan):
+          if (user == owner) or (modstatus) or (user == chan):
             writeQuitFile(chan)
             killthis = readPidFile()
             killthis = int(killthis)
@@ -270,9 +354,9 @@ def tryCommands(s, chan, user, modstatus, message):
             subprocess.call(["sudo python Run.py"], shell=True)
         except Exception, e:
             print "softreseterror"
-	    print e
+            print e
             
-    if message.startswith("!rng") or message.startswith("!random"):
+    if message.startswith("!rng ") or message.startswith("!random "):
         try:
           if message.startswith("!rng"):
             u, a = message.split("!rng ")
@@ -282,13 +366,10 @@ def tryCommands(s, chan, user, modstatus, message):
           a = int(a)
           b = int(b)
             
-          if a > b and b != 0:
-              b = a*b
-              a = b/a
-              b = b/a
-          elif a > b and b == 0:
-              b = a
-              a = 0
+          if a > b:
+              a, b = b, a
+          elif b > a:
+              pass
                 
           r = randint(int(a), int(b))
           resp = "You got " + str(r) + " (" + str(int(a)) + "-" + str(int(b)) + ")"
@@ -307,42 +388,40 @@ def tryCommands(s, chan, user, modstatus, message):
     
     if message.startswith("!botjoin"):
         try:
-          try:
-            a, joinhere = message.split("!botjoin ")
-	    resp = "joined #" + joinhere
-          except:
-            joinhere = user
-            resp = ("joined #" + joinhere)
-          sendChanMsg(s, chan, resp)
-	  if joinhere.startswith("#"):
-		joinhere = joinhere.replace("#", '')
-          joinChan(s, joinhere)
+            try:
+                a, joinhere = message.split("!botjoin ")
+                resp = "joined #" + joinhere
+            except:
+                joinhere = user
+                resp = ("joined #" + joinhere)
+                sendChanMsg(s, chan, resp)
+            if joinhere.startswith("#"):
+                joinhere = joinhere.replace("#", '')
+                joinChan(s, joinhere)
           
-          killthis = readPidFile()
-          killthis = int(killthis)
-          os.kill(killthis, 15)
-          subprocess.call(["cd /home/pi/Desktop/ForceBotti"], shell=True)
-          subprocess.call(["sudo python Run.py"], shell=True)
+            killthis = readPidFile()
+            killthis = int(killthis)
+            os.kill(killthis, 15)
+            subprocess.call(["cd /home/pi/Desktop/ForceBotti"], shell=True)
+            subprocess.call(["sudo python Run.py"], shell=True)
                                                 
         except Exception, e:
             print "botjoin error ", e
-            log("error botjoin", "globalerror")
 
     if message.startswith("!botquit"):
         try:
-          try:
-            a, quithere = message.split("!botquit ")
-	    resp = "leaving from #" + quithere
-          except:
-            quithere = user
-            resp = ("leaving from #" + quithere + ", goodbye")
-          sendChanMsg(s, chan, resp)
-	  if quithere.startswith("#"):
-		quithere = quithere.replace("#", '')
-          quitChan(s, quithere)
+            try:
+                a, quithere = message.split("!botquit ")
+                resp = "leaving from #" + quithere
+            except:
+                quithere = user
+                resp = ("leaving from #" + quithere + ", goodbye")
+            sendChanMsg(s, chan, resp)
+            if quithere.startswith("#"):
+                quithere = quithere.replace("#", '')
+                quitChan(s, quithere)
         except Exception, e:
             print "botquit error ", e
-            log("error botquit", "globalerror")
 
     if message.startswith("!cpustats"):
         try:
@@ -351,8 +430,8 @@ def tryCommands(s, chan, user, modstatus, message):
             resp1 = "CPU usage: " + str(cpu_usage) + "%" + " | CPU temperature: " +  str(cpu_temperature) + "C"
             sendChanMsg(s, chan, resp1)
 
-        except:
-            log("cpustats error", "globalerror")
+        except Exception, e:
+            print "cpustatserror ", e
 
 
     if message.startswith("!killbot"):
@@ -361,10 +440,9 @@ def tryCommands(s, chan, user, modstatus, message):
                 writeQuitFile(chan)
                 sendChanMsg(s, chan, "riPepperonis bot, waking from dead in 1-2 min")
                 restartbot()
-            except:
-                print "error in restartbotrun.py"
-                log("error restartbot", "globalerror")
-    
+            except Exception, e:
+                print "error in restartbotrun.py ", e
+
     if message.startswith("!pyramid"):
         try:
             if user == owner or user == chan:
@@ -383,17 +461,8 @@ def tryCommands(s, chan, user, modstatus, message):
                 sendChanMsg(s, chan, temp)
                 temp = b 
                 sendChanMsg(s, chan, temp)
-                sleep(0.1)
-        except:
-            print "pyramid error"
-            log("error pyramid", "globalerror")
-
-    if message.startswith("!updatemods"):
-        try:
-            updateMods(chan)
-        except:
-            print "updatemods error"
-            log("error updatemods", "globalerror")
+        except Exception, e:
+            print "pyramid error ", e
 
     if message.startswith("!adminspeak"):
         try:
@@ -402,71 +471,8 @@ def tryCommands(s, chan, user, modstatus, message):
                 b = b.strip()
                 c, m = b.split(' ', 1)
                 sendChanMsg(s, c, m)
-        except:
-            print "error adminspeak"
-            log("error adminspeak", "globalerror")
-
-    if message.startswith("!updatecommands"):
-        try:
-            session = ftplib.FTP(ftpserver, kaisanetacc, kaisanetpass)
-            file = open('susihukka2551commands.txt', 'rb')
-            session.storbinary('STOR susihukka2551commands.txt', file)
-            file.close()
-            session.quit()
-        except:
-            print "updatecommands error"
-            log("error updatecommands", "globalerror")
-
-    if message.startswith("!Laddcom") or message.startswith("!laddcom"):
-        try:
-            with open(chancmds, 'a+') as cmdfile:
-                    if modstatus == "ok":
-                        try:
-                            a, b = message.split('m !', 1)
-                            c, d = b.split(': ', 1)
-                            c = '!' + c
-                            cmd = c.decode('utf8')
-                            action = d.decode('utf8')
-                            cmd = cmd.strip().lower()
-                            action = action.strip().lower()
-
-                            for sueless in commands:
-                                    if commands[addc].strip().lower().decode('utf8') == cmd:
-                                            response = ("Command already exists " + commands[addc].strip() + " = " + commands[addc+2] + " please !delcom !" + commands[addc].strip() + "first")
-                                            exists = 1
-                                            sendChanMsg(s, chan, response)
-                                            break
-                                    
-                                    if commands[addc].strip().lower().decode('utf8') == action:
-                                            response = ("Same action already exists in command " + commands[addc-2].strip() + " = " + commands[addc] + " please !delcom !" + commands[addc-2].strip() + "first")
-                                            exists = 1
-                                            sendChanMsg(s, chan, response)
-                                            break
-                                    addc = addc + 1
-                        
-                            if action.startswith("!"):
-                                    action = action.replace('!', '')
-                                    
-                            if exists != 1:
-                                    cmdfile.write('\n'.encode('utf8') + cmd.encode('utf8') + '\n\n'.encode('utf8') + action.encode('utf8') + '\n'.encode('utf8'))
-                                    toLog = user + " added command " + cmd + " that does action: " + action
-                                    info = chan + "reports"
-                                    resp = "added " + cmd + " : " + action
-                                    sendChanMsg(s, chan, resp)
-                                    log(toLog, info)
-                                    if chan.strip() == "susihukka2551":
-                                            cmdfile.close()
-                                            session = ftplib.FTP(ftpserver, kaisanetacc, kaisanetpass)
-                                            file = open('susihukka2551commands.txt', 'rb')
-                                            session.storbinary('STOR susihukka2551commands.txt', file)
-                                            file.close()
-                                            session.quit()
-                        except:
-                            msg = "@" + user + " look now,> !addcom !test: test, muista kaksoispisteet ::::"
-                            sendChanMsg(s, chan, msg)
-        except:
-            print "error in laddcom"
-            log("error Laddcom", "globalerror")
+        except Exception, e:
+            print "error adminspeak ", e
 
 
     if message.startswith("!csfind"):
@@ -481,9 +487,8 @@ def tryCommands(s, chan, user, modstatus, message):
                 resp = getSteamStats(b)
 
             sendChanMsg(s, chan, resp)
-        except:
-            print "error in csfind"
-            log("error csfind", "globalerror")
+        except Exception, e:
+            print "error in csfind ", e
 
     if message.startswith("!vac"):
         try:
@@ -497,17 +502,15 @@ def tryCommands(s, chan, user, modstatus, message):
                 resp = getPlayerBans(b)
 
             sendChanMsg(s, chan, resp)
-        except:
-            print "error in vac"
-            log("error vac", "globalerror")
+        except Exception, e:
+            print "error in vac ", e
 
     if message.startswith("!laststats"):
         try:
             resp = getSteamStats("76561198185015081")
             sendChanMsg(s, chan, resp)
-        except:
-            print "laststat error hapnd"
-            log("error laststats", "globalerror")
+        except Exception, e:
+            print "laststat error hapnd ", e
 
     if message.startswith("!tussarikills"):
         try:      
@@ -522,9 +525,8 @@ def tryCommands(s, chan, user, modstatus, message):
                 resp = getTussariKills(b)
 
             sendChanMsg(s, chan, resp)
-        except:
-            print "tussarikill (hukka) error hapnd"
-            log("error tussarikills", "globalerror")
+        except Exception, e:
+            print "tussarikill (hukka) error hapnd ", e
 
     if message.startswith("!mytussarikills"):
         try:      
@@ -539,9 +541,8 @@ def tryCommands(s, chan, user, modstatus, message):
                 resp = getTussariKills(b)
 
             sendChanMsg(s, chan, resp)
-        except:
-            print "tussarikill (general) error hapnd"
-            log("error mytussarikills", "globalerror")
+        except Exception, e:
+            print "tussarikill (general) error hapnd ", e
 
     if message.startswith("!kills"):
         try:      
@@ -557,9 +558,17 @@ def tryCommands(s, chan, user, modstatus, message):
                 resp = getKills(b, wpn)
 
             sendChanMsg(s, chan, resp)
-        except:
-            print "kills (hukka) error hapnd"
-            log("error kills", "globalerror")
+        except Exception, e:
+            print "kills (hukka) error hapnd ", e
+
+    if message.startswith("!ge "):
+        try:
+            a, searchterm = message.split('!ge ', 1)
+            hinta = get_price(searchterm)
+            sendChanMsg(s, chan, hinta)
+        except Exception, e:
+            print "mortsin ge error"
+            print e
 
     if message.startswith("!mykills"):
         try:      
@@ -575,9 +584,8 @@ def tryCommands(s, chan, user, modstatus, message):
                 resp = getKills(b, wpn)
 
             sendChanMsg(s, chan, resp)
-        except:
-            print "mykills error hapnd"
-            log("error mykills", "globalerror")
+        except Exception, e:
+            print "mykills error hapnd ", e
 
 
     if message.startswith("!color "):
@@ -585,8 +593,8 @@ def tryCommands(s, chan, user, modstatus, message):
             a, b = message.split('!color')
             saythis = "/color " + b.strip()
             sendChanMsg(s, chan, saythis)
-        except:
-            log("error color", "globalerror")
+        except Exception, e:
+            print "error in !color ", e
 
 
 

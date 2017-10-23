@@ -1,31 +1,21 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from __future__ import division
-
-import subprocess
-from subprocess import PIPE, Popen
-from random import randint
-import psutil
 
 
-import json
-import threading
-from multiprocessing import Process, Queue, current_process
+from Vote import startVote, addVote, endVote
+from Logger import log
+from multiprocessing import Process
 import os
 import sys
-import ftplib
 import string
-import select
-import fileinput
-from timeit import default_timer as timer
-from time import sleep, time
-from datetime import datetime, timedelta
-from Read import getUser, getMessage, getChannel, getMod
-from Socket import openSocket, sendMessage, sendChanMsg, joinChan, quitChan, whisperSocket
+from time import strftime
+from time import time as idiotclock
+from Read import getUser, getMessage, getChannel, getMod, getUserWhisper, getMessageWhisper
+from Socket import openSocket, sendMessage, sendChanMsg, joinChan, quitChan
 from Init import joinRoom
-from Logger import log
 from Messagecommands import tryCommands
-from Settings import *
 from Api import *
+from handleMsg import handleMsg, addcom, delcom
 
 def writePidFile():
   with open('my_pid', 'w') as f:
@@ -45,363 +35,342 @@ def refreshCmds():
   for i in range(len(joins)):
     dik.update({joins[i].strip() : ""})
     filepath = joins[i].strip()+"commands"
-      
+
     if os.path.isfile(filepath) and os.path.getsize(filepath) > 0:
       dik2 = {  joins[i].strip() : json.load( open( filepath, "a+" ) )  }
     else:
       defaultdik = { "!defaultcmd" : "defaultaction" }
       json.dump( defaultdik, open(filepath, "a+") )
       dik2 = {joins[i].strip() : json.load(open(filepath, "a+") )}
-          
+
     dik.update(dik2)
 
   return dik
 
 
-
 def main_loop():
-            
-        
-        s = openSocket()
-        joinRoom(s)
-        s.setblocking(0)
 
-        chan = ""
-        user = ""
-        modstatus = ""
-        message = ""
-	site = ""
-	mainos = ""        
-        
-        s.send("CAP REQ :twitch.tv/tags\n")
-        readbuffer = ""
-        elapsed = 0
-        elapsed2 = 0
-        toldit = 0
-        end = 0
-	spam = 1
-	adtime = 300
+    s = openSocket()
+    joinRoom(s)
+    s.setblocking(0)
 
-        bannedrooms = []
-        cooldownlist = []
-        bannedcmds = []
-        bannedusers = ['bulfbot']
-        approved = [owner, 'mmorz', 'bulftrik']
-	templog = { '' : ''}	
-	autobanlist = []
+    chan = ""
+    user = ""
+    modstatus = False
+    message = ""
+    msglog = {}
+    s.send("CAP REQ :twitch.tv/tags\n")
+    readbuffer = ""
+    elapsed = 0
+    elapsed2 = 0
+    toldit = 0
+    spam = 1
+    adtime = 300
+    checkban = ""
+    prevline = ""
+    votenum = 0
+    done1, done2, done3 = 0,0,0
+    choices = {}
+    votes = {}
+    voters = {}
+    voteon = {}
+    options = {}
+    msglogfreq = 500
+    prevtemp = ""
+    approved = [owner, 'mmorz', 'bulftrik']
+    cooldownlist = []
+    cdlist = []
+    cdtimer = 0
+    modonlycmd = 0
+    kuismafix = ["strongkuisma", "harshmouse"]
+    gamerequs = {}
 
-        cdtimer = 0
-        pogchamp = 0
-        pogchamptimer = 0
-        modonlycmd = 0
-                
-        dik = refreshCmds()
-        writePidFile()
-        prevchan = readQuitFile()
-        prevmsg = ""
-        sendChanMsg(s, prevchan, "Started MingLee")       
-        reload(sys)
-        sys.setdefaultencoding("utf8")
-        sendChanMsg(s, owner, "started")
-        while 1:
-                start = timer()
-                temp = ""
-                
+    dik = refreshCmds()
+    writePidFile()
+    reload(sys)
+    sys.setdefaultencoding("utf-8")
+    sendChanMsg(s, owner, "started")
+    while 1:
+        start = idiotclock()
+        temp = ""
+        try:
+            getit = s.recv(4096)
+            readbuffer = readbuffer + getit
+            temp = string.split(readbuffer, "\n")
+            readbuffer = temp.pop()
+        except:
+            sleep(0.1)
+
+        if temp != "":
+            for line in temp:
                 try:
-                        getit = s.recv(4096)
-                        readbuffer = readbuffer + getit
-                        temp = string.split(readbuffer, "\n")
-                        
-                        readbuffer = temp.pop()
-                except:
-                        sleep(0.1)
-
-                if temp != "":
-                        for line in temp:
-                                try:
-                                        
-                                        if "PING" in line:
-                                                s.send("PONG :tmi.twitch.tv\r\n")
-                                        else:
-                                                if "PRIVMSG" in getit:
-                                                        user = getUser(line).encode('utf8')
-                                                        message = getMessage(line).encode('utf8')
-                                                        chan = getChannel(line).encode('utf8')
-                                                        modstatus = getMod(line).encode('utf8')
-                                                        
-
-                                                        user = user.strip()
-                                                        message = message.strip()
-                                                        chan = chan.strip()
-
-                                                        user = user.lower()
-                                                        chan = chan.lower()
-                                                       
-                                                        time = datetime.now().strftime('%Y-%d-%m %H:%M:%S')
-                                                        toLog = user.decode('utf-8') + ": " + message.decode('utf-8')
-                                                        prevmsg = message.strip()
-                                                        log(toLog, chan)
-                                                else:
-                                                        sleep(0.01)
-                                except Exception, e:
-                                        print "error ping ", e
-					
-                
-                                       
-
-                if temp != "":
-                        if "PRIVMSG" in getit:
-                          
-                            if modstatus == 'ok' or user == chan or user in approved:
-                              modstatus = 'ok'
-
-                            checkban = chan + message
-
-			    if checkban in autobanlist:
-				try:
-				  resp = "/timeout " + user + " 300"
-				  sendChanMsg(s, chan, resp)
-				except Exception, e:
-				  print "automated ban error ", e
-
-			    if message.startswith("!autoban") and modstatus == 'ok':
-				try:
-				  trash, word = message.split("!autoban ")
-				  autobanlist.append( (chan+word) )
-				  sendChanMsg(s, chan, (word + " added to autobanlist") )
-				except Exception, e:
-				  print "autoban error ", e
-
-                            if (user not in bannedusers) and (chan not in bannedrooms) and (checkban not in cooldownlist or modstatus == 'ok') and (checkban not in bannedcmds):
-                                    if (checkban not in cooldownlist) and (message.startswith('!')):
-                                        if ( len(cooldownlist) >= 1 ) :
-                                          cooldownlist.pop(0)
-                                    
-                                        cdtimer = timer()
-                                        cooldownlist.append(checkban)
-                                        
-                                    if message.startswith('!'):
-                                      
-                                      try:
-                                        uloste, b = message.split(' ', 1)
-                                        b = b.strip()
-                                      except:
-                                        uloste = message.strip()
-                                        b = ""
-                                      try:  
-                                        uloste = str(uloste)
-                                        uloste = dik[chan][ uloste.lower().decode('utf8') ]
-                                        if uloste != None:
-                                          if '$user$' in uloste:
-                                            uloste = uloste.replace('$user$', user)
-                                        
-                                          if '$mod$' in uloste:
-                                              uloste = uloste.replace('$mod$', "")
-                                              modonlycmd = 1
-
-                                          if '$uptime$' in uloste:
-                                              uloste = uloste.replace('$uptime$', getUptime(chan))
-                                          if '$random100$' in uloste:
-                                              uloste = uloste.replace('$random100$', str( randint(0, 100) ) )
-                                          if '$d20$' in uloste:
-                                              uloste = uloste.replace('$d20$', str( randint(1, 20) ) )
-                                          if '$d6$' in uloste:
-                                              uloste = uloste.replace('$d6$', str( randint(1, 6) ) )
-                                                          #this last so !paikal $random100$ doesnt work
-                                          if '$own$' in uloste:
-                                              uloste = uloste.replace('$own$', b)
-
-                                          if modonlycmd == 0:
-                                            sendChanMsg(s, chan, uloste) 
-                                          elif modonlycmd == 1:
-                                            modonlycmd = 0
-                                            if modstatus == 'ok' and uloste != "":
-                                              sendChanMsg(s, chan, uloste)
-                                      except Exception, e:
-					   pass
-                                      Process(target=tryCommands, args=(s, chan, user, modstatus, message)).start()
-                            
-
-          		    if message.startswith("!ads") and modstatus == 'ok':
-				try:
-				  if spam == 0:
-				   spam = 1
-				   sendChanMsg(s, chan, "Advertisements on")
-				  elif spam == 1:
-				   spam = 0
-				   sendChanMsg(s, chan, "Advertisements off")
-				except Exception, e:
-				  print "spamon error ", e
-
-	 		    if message.startswith("!adtime") and modstatus == 'ok':
-				try:
-				  useless, tempadtime = message.split('!adtime ')
-				  tempadtime = int(tempadtime)
-				  if tempadtime < 200:
-				    sendChanMsg(s, chan, "Ad time can't be lower than 200 seconds")
-				  elif tempadtime >= 200:
-				    adtime = int(tempadtime)
-				    sendChanMsg(s, chan, ("Adtime is now " + str(adtime) + " sec") )
-				except Exception, e:
-				  sendChanMsg(s, chan, ("Current gap between ads: " + str(adtime) ) )
-				  print "!adtime error ", e
-
-
-			    if message.startswith("!mainos ") and modstatus == 'ok':
-				try:
-				  useless, mainos = message.split("!mainos ")
-				  sendChanMsg(s, chan, ("Ad is now: " + mainos) )
-				except Exception, e:
-				  print "!mainos error ", e
-
-			    if message.startswith("!site") and modstatus == 'ok':
-				try:
-				  try:
-				    useless, site = message.split('!site ')
-				  except:
-				    site = site
-				  site = site.strip().lower()
-				  mainos = "Currently playing at "
-				  if site.startswith("casinohuone"):
-					mainos = mainos + "casinohuone.com/invited?by=Hukka8787"
-				  elif site.startswith("24hbet"):
-					mainos = mainos + "24hbet.com/fi/invited?by=Hukka87"
-				  elif site.startswith("igame"):
-					mainos = mainos + "igame.com/fi/invited?by=hukka87"
-				  elif site.startswith("kolikkopelit"):
-					mainos = mainos + "kolikkopelit.com/suositus/hukka87"
-				  elif site.startswith("leijonakasino"):
-					mainos = mainos + "leijonakasino.com/casino/invited?by=hukka"
-				  elif site.startswith("hertat"):
-					mainos = mainos + "hertat.com/suositus/hukka87"
-				  elif site.startswith("unibet"):
-					mainos = mainos + "Unibet http://bit.ly/1QZWHRx"
-				  resp = "Ad is now: " + mainos
-				  sendChanMsg(s, chan, resp)
-				except Exception, e:
-				  print "!site error ", e
-
-                            if message.startswith("!refreshcommands"):
-                              try:
-                                dik = refreshCmds()
-                              except Exception, e:
-                                print "refreshcommands error"
-                                print e
-                            
-                            if message.startswith("!addcom ") and modstatus == "ok":
-                              try:
-                                cmds = dik[chan]
-                                a, b = message.split('!addcom ', 1)
-                                c, d = b.split(' ', 1)
-                                if c.startswith("!") == False:
-                                    c = '!' + c
-                                cmd = c.decode('utf8')
-                                if cmd.endswith(':'):
-                                    cmd = cmd.replace(':', '')
-
-                                action = d.decode('utf8')
-                                action = action.strip().decode('utf8')
-                                cmd = cmd.strip().lower().decode('utf8')
-                                
-                                toAdd = {cmd : action}
-                                cmdDoesExist = cmds.get(cmd)
-                                if cmdDoesExist == None:
-                                  cmds.update(toAdd)
-                                  dik.update(cmds)
-                                  json.dump(cmds, open(chan.strip()+"commands", 'wb'), sort_keys=True, indent=3)
-                                  dik = refreshCmds()
-                                  
-                                  resp = "[ADDED]: " + cmd + " : " + action
-                                  sendChanMsg(s, chan, resp)
-                                  toLog = user + " "  + resp
-                                  log(toLog, chan+"reports")
-                                else:
-                                  resp = cmd + " : " + cmdDoesExist + " already exists, please !delcom it first"
-                                  sendChanMsg(s, chan, resp)
-                              except Exception, e:
-                                print "addcom error ", e
-                                log("addcom error", "globalerror")
-
-                            if message.startswith("!delcom ") and modstatus == "ok":
-                              try:
-                                cmds = dik[chan]
-                                a, b = message.split('!delcom ', 1)
-                                if b.startswith("!") == False:
-                                  b = '!' + b
-                                poistettava = b.strip().lower().decode('utf8')
-
-                                
-                                action = cmds.get(poistettava)
-                                if action != None:
-                                  del cmds[poistettava]
-                                  dik.update(cmds)
-                                  resp = "[DELETED]: " + poistettava + " : " + action
-                                  json.dump(cmds, open(chan.strip()+"commands", 'wb'), sort_keys=True, indent=3)
-                                  dik = refreshCmds()
-                                  sendChanMsg(s, chan, resp)
-                                  toLog = user + " "  + resp
-                                  log(toLog, chan+"reports")
-                              except Exception, e:
-                                print "delcom error ", e
-                                log("delcom error", "globalerror")
-                                          
-                            if message == "!disablebot" and (user == chan or user == owner):
-                                try:
-                                    bannedrooms.append(chan)
-                                    sendChanMsg(s, chan, "Bot has been disabled.")
-                                except Exception, e:
-                                    print "weird disable/enable bot error "
-				    print e
-                                
-                            if message == "!enablebot" and (user == chan or user == owner):
-                                try:
-                                    bannedrooms.remove(chan)
-                                    sendChanMsg(s, chan, "Bot has been enabled.")
-                                except Exception, e:
-                                    print "weird disable/enable bot error "
-				    print e 
-                            
-                            if message.startswith("!discom") and (modstatus == 'ok') :
-                                try:
-                                    pamp = message.split("!discom ")
-                                    banthis = chan + str(pamp[1])
-                                    bannedcmds.append(banthis)
-                                    resp = pamp[1] + " has been disabled."
-                                    sendChanMsg(s, chan, resp)
-                                except Exception, e:
-                                    print "weird disable/enable command error ", e
-				    
-                                
-                            if message.startswith("!encom") and (modstatus == 'ok'):
-                                try:
-                                    pamp = message.split("!encom ")
-                                    unbanthis = chan + str(pamp[1])
-                                    bannedcmds.remove(unbanthis)
-                                    resp = pamp[1] + " has been enabled."
-                                    sendChanMsg(s, chan, resp)
-                                except Exception, e:
-                                    print "weird disable/enable com error ", e
-                            
-                            
-                end = timer()
-                elapsed = elapsed + (end-start)
-                elapsed2 = elapsed2 + (end-start)
-                if(elapsed >= 300):
+		    
+                    if "PING" in line:
                         s.send("PONG :tmi.twitch.tv\r\n")
-                        elapsed = 0
+                    else:
+                        if "PRIVMSG" in getit:
+                            user = getUser(line).encode('utf8')
+                            message = getMessage(line).encode('utf8')
+                            chan = getChannel(line).encode('utf8')
+                            modstatus = getMod(line)
+
+                            user = user.strip().lower()
+                            message = message.strip()
+                            chan = chan.strip().lower()
+                            #time = datetime.now().strftime('%Y-%d-%m %H:%M:%S')
 
 
-                if(end - cdtimer > 15):
-                        if ( len(cooldownlist) >= 1):
-                                cooldownlist.pop(0)
+                        if "WHISPER" in getit:
+                            user = getUserWhisper(line).encode('utf8')
+                            message = getMessageWhisper(line).encode('utf8')
+                            chan = "jtv," + user
+                            modstatus = False
+                            if user == "finnishforce_":
+                                modstatus = True
+			
+			#msglog[chan].append(strftime('%x %X') + "<{0}>: {1}".format(user, message))
+			#print msglog
+		 
+		except:
+		   pass
+		
+
+
+	try:
+	   msglog[chan]
+	except:
+	   msglog[chan] = ['']
+	   pass
+	
+    	end = idiotclock()
+        #elapsed = elapsed + (end-start)
+        elapsed2 = elapsed2 + (end-start)
+        #if(elapsed >= 300):
+        #  s.send("PONG :tmi.twitch.tv\r\n")
+        #  elapsed = 0
+        
+        if (elapsed2 >= 30):
+	  try:
+            cdlist.pop(0)
+	    elapsed2 = 0
+	  except:
+	    pass
+        
+                
+                    
+
+
+
+
+        if (temp != "" and ("PRIVMSG" or "WHISPER" in getit) and checkban != (user+chan+message)):
+            if modstatus or user == chan or user in approved:
+                modstatus = True
+            checkban = user + chan + message
+	    msglog[chan].append(strftime('%x %X') + "<{0}>: {1}".format(user, message))
+	    if len(msglog[chan]) > msglogfreq:
+		log(msglog[chan], chan)
+		del msglog[chan]
+            if message.startswith(''):
+                if ( len(cooldownlist) >= 1 ) :
+                    cooldownlist.pop(0)
+                try:
+                    voteon[chan]
+                except Exception, e:
+		    pass
+                    voteon[chan] = 0
+                    voters[chan] = ['']
+
+                #cdtimer = timer()
+                cooldownlist.append(checkban)
+
+                if message.startswith(''):
+                    #handleMsg(s, dik, modstatus, chan, user, message)
+                    #tryCommands(s, chan, user, modstatus, message)
+		    
+                    Process(target=handleMsg, args=(s, dik, modstatus, chan, user, message,)).start()
+                    Process(target=tryCommands, args=(s, chan, user, modstatus, message,)).start()
+                    #p1.start()
+                    #p2.start()
+		
+		if "has won the giveaway" in message and user.lower() == "nightbot":
+		    try:
+			search, b = message.split(" ", 1)
+			sendChanMsg(s, chan, getFollowStatus(search, chan))
+		    except Exception, e:
+			print "nightbot giveaway detection error:", e		
+
+		if message.startswith("!freq") and user == owner:
+		    try:
+			a, b = message.split("!freq ")
+			msglogfreq = int(b)
+		    except Exception, e:
+			print "logfreq error:", e
+                if message.startswith("!kuismafix") and (modstatus or user==owner):
+                    try:
+                        if chan not in kuismafix:
+                            kuismafix.append(chan)
+                            sendChanMsg(s, chan, "Channel has been kuismafixed")
+                        elif chan in kuismafix:
+                            kuismafix.remove(chan)
+                            sendChanMsg(s, chan, "Kuismafix has been lifted")
+                    except Exception, e:
+                        print "kuismafix error:", e
+		
+		if message.startswith("!request ") and user not in cdlist:
+		    try:
+			lista = dik[chan].get("!lista")
+			if lista == None:
+			  lista = ""
+			#print lista
+			toAppend = message.split("!request")[1].strip()
+			#print toAppend
+			lista += toAppend + ", "
+			#print lista
+			dik[chan].update({"!lista": lista})
+			dik.update(dik[chan])
+			json.dump(dik[chan], open(chan.strip() + "commands", 'wb'), sort_keys=True, indent=3)
+			cdlist.append(user)
+			sendChanMsg(s, chan, lista)
+			
+		    except Exception, e:
+			print e
+
+		if message.startswith("!delreq") and modstatus:
+		    try:
+			delnum = 1
+			try:
+			    delnum = int(message.split("!delreq ")[1])
+			except:
+			    pass
+			lista = dik[chan].get("!lista")
+			lista = lista.split(", ")
+			lista.pop(delnum-1)
+			lista = ", ".join(lista)
+			dik[chan].update({"!lista": lista})
+			dik.update(dik[chan])
+			json.dump(dik[chan], open(chan.strip() + "commands", 'wb'), sort_keys=True, indent=3)
+			sendChanMsg(s, chan, lista)
+		    except:
+			pass
+
+                if message.startswith("!startvote ") and voteon[chan] == 0 and modstatus:
+                    try:
+                        choices[chan], votes[chan] = startVote(message)
+                        sendChanMsg(s, chan, "Vote started")
+                        options[chan] = ("Options: " + str(", ".join(choices[chan])))
+			#nr = 0
+			#string = ""
+                        #for i in choices[chan]:
+			#	string = string + str(nr+1) + ". " + choices[chan][nr]
+			#	nr = nr+1
+			#options[chan] = string
+			sendChanMsg(s, chan, str(options[chan]))
+                        voteon[chan] = 1
+                        print "choices:", choices
+
+                    except Exception, e:
+                        print "startvote error,", e
+
+                if message.startswith("!options"):
+                    try:
+                        sendChanMsg(s, chan, str(options[chan]))
+                    except:
+                        pass
+
+                #print "b4 vote:", voters, voteon[chan]
+
+                if message.startswith("!vote ") and voteon[chan] == 1 and user not in voters[chan]:
+                    try:
+
+                        votes[chan] = addVote(choices[chan], votes[chan], message)
+                        voters[chan].append(user)
+
+                        #print votes[chan]
+                        #print "voters:", voters[chan]
+
+                        voter_amount = len(voters[chan])-1
+                        #chan = "jtv,"+user
+                        if voter_amount % 5 == 0:
+                            sendChanMsg(s, chan, "{0} votes currently in".format(voter_amount))
+                    except Exception, e:
+                        print e
+
+                if message.startswith("!endvote") and voteon[chan] == 1 and modstatus:
+                    try:
+                        sendChanMsg(s, chan, ("Most votes: "+endVote(choices[chan], votes[chan])))
+                        voteon[chan] = 0
+                        choices[chan] = ['']
+                        votes[chan] = ['']
+                        voters[chan] = ['']
+                        options[chan] = ['']
+                    except Exception, e:
+                        print e
+
+                if message.startswith("!addcom ") and modstatus:
+                    try:
+                        if chan in kuismafix and (user != owner):
+                            print "addcom skipped"
+                        else:
+                            addcom(s, dik, chan, user, message)
+                    except Exception, e:
+                        print "error @!addcom ", e
+
+                if message.startswith("!delcom ") and modstatus:
+                    try:
+                        if chan in kuismafix and user != owner:
+                            print "delcom skipped"
+                        else:
+                            delcom(s, dik, chan, user, message)
+                    except Exception, e:
+                        print "error @!delcom ", e
+
+                if message.startswith("!editcom ") and modstatus:
+                    try:
+                        if chan in kuismafix and (user != owner):
+                            print "editcom skipped"
+                        else:
+                            todel = message.split(" ", 2)
+                            delcom(s, dik, chan, user, ("!delcom " + todel[1]))
+                            addcom(s, dik, chan, user, message.replace("!editcom", "!addcom", 1))
+                    except Exception, e:
+                        print "error @!editcom ", e
+
+
+#                end = timer()
+#                elapsed = elapsed + (end-start)
+#                elapsed2 = elapsed2 + (end-start)
+#		print elapsed2
+#                if(elapsed >= 300):
+#                    s.send("PONG :tmi.twitch.tv\r\n")
+#                    elapsed = 0#
+#		done1, done2, done3 = 0, 0, 0
+#		try:
+#		 if (elapsed2 >= 18 and done1 != 1):
+#		    print elapsed2, dik["susihukka2551"]["!casinot"]
+#		    done1 = 1
+#		    sendChanMsg(s, "susihukka2551", dik["susihukka2551"]["!casinot"])
+#		 if (elapsed2 >= 36 and done2 != 1):
+#		    done2 = 1
+#		    sendChanMsg(s, "susihukka2551", dik["susihukka2551"]["!casinot2"])
+#		 if (elapsed2 >= 54):
+#		    sendChanMsg(s, "susihukka2551", dik["susihukka2551"]["!casinot3"])
+#		    done1, done2 = 0, 0
+#		    elapsed2 = 0
+#		except Exception, e:
+#		 print "hukkamainos error", e
+#		 pass
+#               if(end - cdtimer > 15):
+#                      if ( len(cooldownlist) >= 1):
+#                             cooldownlist.pop(0)
 
 
 if __name__ == '__main__':
     while 1:
         try:
-                print "mainloop"
-                main_loop()
+            print "mainloop"
+            main_loop()
         except Exception, e:
-                print "error in mainloop ", e
-		pass
-                
+            print "mainloop error: ", e
+	    log([str(e)], "error")
+            pass
+

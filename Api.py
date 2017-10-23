@@ -6,14 +6,16 @@ from bs4 import BeautifulSoup
 import re
 import websocket
 from datetime import datetime, timedelta, date, time
-from time import sleep
+from time import sleep, mktime, strptime, strftime, localtime
+from time import time as currenttime
 import wikia
 import wikipedia
 import requests
 import codecs
 from Settings import *
 import random
-
+from random import randint
+from dateutil import relativedelta as rd
 
 def getSteamStats(steamid):
         try:
@@ -97,6 +99,7 @@ def getUptime(chan):
         try:    
                 url = ("https://api.twitch.tv/kraken/streams/" + chan)
                 req = urllib2.Request(url)
+                req.add_header("Client-ID", tclientid)
                 resp = urllib2.urlopen(req)
                 page = json.load(resp)
 
@@ -306,7 +309,7 @@ def getViewers(chan):
                                 #        print e
 				
                                 #print viewlist
-				random.shuffle(viewers)
+				#random.shuffle(viewers)
                                 return viewers, amount
                         except Exception, e:
                                 print "errors: " + str(errors)
@@ -476,19 +479,62 @@ def getTitle(chan):
                 print e
                 
 
+def getDrink():
+	try:
+		with open('alko.json') as alkofile:
+			data = json.load(alkofile)
+			num = randint(0, len(data))
+			nimi, hinta, tyyppi, tuotenumero = data[num]["Nimi"], data[num]["Hinta"], data[num]["Tyyppi"], data[num]["Numero"]
+			tuotenumero = str(tuotenumero).rjust(6, '0')
+			return nimi, hinta, tyyppi, tuotenumero
+	except Exception, e:
+		print "getdrink error", e
+
+def getFollowing(user, chan):
+	try:	
+		try:
+			url = ("https://api.twitch.tv/kraken/users/"+user+"/follows/channels/"+chan)
+                	req = urllib2.Request(url)
+                	req.add_header("Client-ID", tclientid)
+                	resp = urllib2.urlopen(req)
+                	page = json.load(resp)
+			dateFollowed = page['created_at']
+		except:
+			return "0"
+		#timediff = currenttime()-mktime(strptime(dateFollowed, "%Y-%m-%dT%H:%M:%SZ"))
+		#delta = timedelta(seconds=timediff-7200)
+		dif = rd.relativedelta(datetime.fromtimestamp(currenttime()-7200), datetime.fromtimestamp(mktime(strptime(dateFollowed, "%Y-%m-%dT%H:%M:%SZ"))))
+		if dif.years != 0:
+			return "{0} years, {1} months, {2} days, {3} hrs".format(dif.years, dif.months, dif.days, dif.hours)
+		if dif.months != 0:
+			return "{0} months, {1} days, {2} hrs".format(dif.months, dif.days, dif.hours)
+		if dif.days != 0:
+			return "{0} days, {1} hrs, {2} min".format(dif.days, dif.hours, dif.minutes)
+		if dif.hours != 0:
+			return "{0} hours, {1} minutes".format(dif.hours, dif.minutes)
+		return "{0} minutes, {1} seconds".format(dif.minutes, dif.seconds)
+	except Exception, e:
+		print "getFollowing error at Api.py, info:", e
 
 
+def getFollowStatus(user, chan):
+	try:
+		howlong = getFollowing(user, chan)
+		if howlong == "0":
+			return user + " is not following " + chan
+		else:
+			return user + " has been following " + chan + " for " + howlong
+	except Exception, e:
+		print "get follow status error, info:", e
 
-                
+def getMix():
+        try:
+                with open('alko.json') as alkofile:
+                        data = json.load(alkofile)
+                        num = randint(0, len(data))
+                        nimi, litrahinta, tyyppi = data[num]["Nimi"], data[num]["Litrahinta"], data[num]["Tyyppi"]
+                        return nimi, litrahinta, tyyppi
+        except Exception, e:
+                print "getmix error", e
 
 
-
-
-
-
-
-
-
-
-
-        
