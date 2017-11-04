@@ -133,7 +133,7 @@ def tryCommands(s, chan, user, modstatus, message):
 	except Exception, e:
 	    print "!juoma error", e
 
-    if message.startswith('!drinkki '):
+    if message.startswith('!drinkki'):
 	try:
 	    nimi1, lhinta1, tyyppi1 = getMix()
 	    nimi2, lhinta2, tyyppi2 = getMix()
