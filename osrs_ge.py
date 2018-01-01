@@ -47,10 +47,9 @@ def get_price(search_term):
                     if OSRS_ITEMS[id]["name"] == match)
 
     params = {"i": match_id, "a": "guidePrice"}
-    result = requests.get(RSBUDDY_API, params=params).content
-    json_res = json.loads(result)
+    result = requests.get(RSBUDDY_API, params=params).json()
 
-    price = json_res["overall"]
+    price = result["overall"]
 
     # sometimes rsbuddy returns price of 0 if there is not enough traded items.
     # try old price search for those
