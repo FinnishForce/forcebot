@@ -285,7 +285,7 @@ def tryCommands(s, chan, user, modstatus, message):
 
     if message.startswith("!pyramid") and (user == OWNER or user == chan):
         try:
-            a, b = message.split('!pyramid ')
+            a, b = message.split('!pyramid')
             temp = b
             sendChanMsg(s, chan, temp)
             temp = b + b
