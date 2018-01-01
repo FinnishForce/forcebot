@@ -4,53 +4,53 @@ from random import randint
 from Socket import sendChanMsg
 import json
 
+
 def handleMsg(s, dik, modstatus, chan, user, message):
     try:
-        uloste, b = message.split(' ', 1)
-        b = b.strip()
+        output, own = message.split(' ', 1)
+        own = own.strip()
     except:
-        uloste = message.strip()
-        b = ""
+        output = message.strip()
+        own = ""
     try:
-        modonlycmd = 0
-        uloste = str(uloste)
+        modonlycmd = False
+        output = str(output)
         if chan.startswith("jtv"):
-            uloste = dik["jtv"][uloste.lower().decode('utf8')]
+            output = dik["jtv"][output.lower().decode('utf8')]
         else:
-            uloste = dik[chan][uloste.lower().decode('utf8')]
-        if uloste != None:
-            if '$user$' in uloste:
-                uloste = uloste.replace('$user$', user)
+            output = dik[chan][output.lower().decode('utf8')]
+        if output != None:
+            if '$user$' in output:
+                output = output.replace('$user$', user)
 
-            if '$mod$' in uloste:
-                uloste = uloste.replace('$mod$', "")
-                modonlycmd = 1
+            if '$mod$' in output:
+                output = output.replace('$mod$', "")
+                modonlycmd = True
 
-            if '$uptime$' in uloste:
-                uloste = uloste.replace('$uptime$', getUptime(chan))
+            if '$uptime$' in output:
+                output = output.replace('$uptime$', getUptime(chan))
 
-            if '$random100$' in uloste:
-                uloste = uloste.replace('$random100$', str(randint(0, 100)))
+            if '$random100$' in output:
+                output = output.replace('$random100$', str(randint(1, 100)))
 
-            if '$d20$' in uloste:
-                uloste = uloste.replace('$d20$', str(randint(1, 20)))
+            if '$d20$' in output:
+                output = output.replace('$d20$', str(randint(1, 20)))
 
-            if '$d6$' in uloste:
-                uloste = uloste.replace('$d6$', str(randint(1, 6)))
-                # this last so !paikal $random100$ doesnt work
+            if '$d6$' in output:
+                output = output.replace('$d6$', str(randint(1, 6)))
 
-            if '$own$' in uloste:
-                uloste = uloste.replace('$own$', b)
+            # this ($own$) last so !paikal $random100$ doesnt work
+            if '$own$' in output:
+                output = output.replace('$own$', own)
 
             if not modonlycmd:
-                sendChanMsg(s, chan, uloste)
+                sendChanMsg(s, chan, output)
             elif modonlycmd:
-                modonlycmd = 0
-                if modstatus and uloste != "":
-                    sendChanMsg(s, chan, uloste)
+                if modstatus and output != "":
+                    sendChanMsg(s, chan, output)
     except Exception, e:
-        #print "handlemsg error:", e
         pass
+
 
 def delcom(s, dik, chan, user, message):
     try:
@@ -59,8 +59,7 @@ def delcom(s, dik, chan, user, message):
         else:
             cmds = dik[chan]
         a, b = message.split('!delcom ', 1)
-        #if b.startswith("!") == False:
-        #    b = '!' + b
+
         poistettava = b.strip().lower().decode('utf8')
 
         action = cmds.get(poistettava)
@@ -77,6 +76,7 @@ def delcom(s, dik, chan, user, message):
     except Exception, e:
         print "delcom error:", e
 
+
 def addcom(s, dik, chan, user, message):
     try:
         if chan.startswith("jtv"):
@@ -85,8 +85,7 @@ def addcom(s, dik, chan, user, message):
             cmds = dik[chan]
         a, b = message.split('!addcom ', 1)
         c, d = b.split(' ', 1)
-        #if c.startswith("!") == False:
-        #    c = '!' + c
+
         cmd = c.decode('utf8')
         if cmd.endswith(':'):
             cmd = cmd.replace(':', '')
@@ -109,7 +108,7 @@ def addcom(s, dik, chan, user, message):
             sendChanMsg(s, chan, resp)
         else:
             resp = cmd + " : " + cmdDoesExist + " already exists, please !delcom it first"
-            chan = "jtv,"+user
+            chan = "jtv," + user
             sendChanMsg(s, chan, resp)
     except Exception, e:
         print "addcom error:", e

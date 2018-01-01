@@ -4,8 +4,9 @@ def getUser(line):
         user = separate[0].split("@", 4)
         user = user[2]
         return user
-    except:
-        print "Getuser error"
+    except Exception, e:
+        print "Getuser error ->", e
+
 
 def getUserWhisper(line):
     try:
@@ -13,17 +14,20 @@ def getUserWhisper(line):
         user = separate[0].split("@", 4)
         user = user[2]
         return user.strip().lower()
-    except:
-        print "Getuser error"
+    except Exception, e:
+        print "Getuser error ->", e
+
 
 def getMessage(line):
    try:
         separate = line.split(".tmi.twitch.tv PRIVMSG #")
         message = separate[1].split(" :", 1)
         message = message[1]
+        print "message is <{0}>".format(message)
         return message
-   except:
-        print "Getmessage error"
+   except Exception, e:
+        print "Getmessage error ->", e
+
 
 def getMessageWhisper(line):
    try:
@@ -31,8 +35,9 @@ def getMessageWhisper(line):
         message = separate[1].split(" :", 1)
         message = message[1]
         return message
-   except:
-        print "Getmessage error"
+   except Exception, e:
+        print "Getmessage error ->", e
+
 
 def getChannel(line):
     try:
@@ -40,8 +45,9 @@ def getChannel(line):
         sep2 = separate[1].split(" :", 1)
         channel = sep2[0]
         return channel
-    except:
-        print "getchannel error"
+    except Exception, e:
+        print "getchannel error ->", e
+
 
 def getMod(line):
     try:
@@ -53,6 +59,5 @@ def getMod(line):
             return False
         else:
             print "this shouldn't happen (getmod)"
-    except:
-        print "getmod error"
-      
+    except Exception, e:
+        print "getmod error ->", e

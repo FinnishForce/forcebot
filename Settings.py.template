@@ -1,0 +1,7 @@
+HOST = "irc.chat.twitch.tv"
+PORT = 6667
+PASS =  your oauth token here (looks like oauth:381d90ads832019as38)
+IDENT = your bot name here
+TCLIENTID = your twitch client id here (for getting uptime etc) help: https://blog.twitch.tv/client-id-required-for-kraken-api-calls-afbb8e95f843
+OWNER = your name here if you own the bot
+STEAM_API_KEY = your steam api key here for things like getting latest cs stats
