@@ -1,0 +1,4 @@
+*.pyc
+/my_pid
+/.venv
+/Settings.py
