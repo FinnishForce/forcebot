@@ -38,7 +38,7 @@ def refreshCmds():
 def main_loop():
     s = openSocket()
     joinRoom(s)
-    s.setblocking(0)
+    #s.setblocking(0)
 
     chan = ""
     user = ""
@@ -60,6 +60,10 @@ def main_loop():
         temp = ""
         try:
             getit = s.recv(4096)
+            # If we receive data with length of 0, we are disconnected. Try to reconnect when that happens.
+            if len(getit) == 0:
+                print "Disconnected..."
+                break
             readbuffer = readbuffer + getit
             temp = string.split(readbuffer, "\r\n")
             readbuffer = temp.pop()
