@@ -76,14 +76,14 @@ def main_loop():
                     if "PING" in line:
                         s.send("PONG :tmi.twitch.tv\r\n")
                     else:
-                        if "PRIVMSG" in getit:
+                        if "PRIVMSG" in line:
                             user = getUser(line).encode('utf8').strip().lower()
                             message = getMessage(line).encode('utf8').strip()
                             chan = getChannel(line).encode('utf8').strip().lower()
                             modstatus = getMod(line)
 
 
-                        if "WHISPER" in getit:
+                        if "WHISPER" in line:
                             user = getUserWhisper(line).encode('utf8').strip().lower()
                             message = getMessageWhisper(line).encode('utf8').strip()
                             chan = "jtv," + user
@@ -93,108 +93,109 @@ def main_loop():
                 except Exception, e:
                     print "Error in 'for line in temp' ->", e
 
-        if temp != "" and message != "" and ('PRIVMSG' or 'WHISPER' in getit) and not getit.startswith('PING :tmi.twitch.tv'):
+                if line != "" and message != "" and ('PRIVMSG' or 'WHISPER' in line) and not line.startswith('PING :tmi.twitch.tv'):
 
-            if modstatus or user == chan or user in approved:
-                modstatus = True
+                    if modstatus or user == chan or user in approved:
+                        modstatus = True
 
-            # Check if message is a command
-            Process(target=handleMsg, args=(s, dik, modstatus, chan, user, message,)).start()
-            Process(target=tryCommands, args=(s, chan, user, modstatus, message,)).start()
+                    # Check if message is a command
+                    Process(target=handleMsg, args=(s, dik, modstatus, chan, user, message,)).start()
+                    Process(target=tryCommands, args=(s, chan, user, modstatus, message,)).start()
 
-            if "has won the giveaway" in message and user == "nightbot":
-                try:
-                    search, b = message.split(" ", 1)
-                    sendChanMsg(s, chan, getFollowStatus(search, chan))
-                except Exception, e:
-                    print "nightbot giveaway detection error:", e
+                    if "has won the giveaway" in message and user == "nightbot":
+                        try:
+                            search, b = message.split(" ", 1)
+                            sendChanMsg(s, chan, getFollowStatus(search, chan))
+                        except Exception, e:
+                            print "nightbot giveaway detection error:", e
 
-            if message.startswith("!kuismafix") and (modstatus or user == OWNER):
-                try:
-                    if chan not in kuismafix:
-                        kuismafix.append(chan)
-                        sendChanMsg(s, chan, "Channel has been kuismafixed")
-                    elif chan in kuismafix:
-                        kuismafix.remove(chan)
-                        sendChanMsg(s, chan, "Kuismafix has been lifted")
-                except Exception, e:
-                    print "kuismafix error:", e
+                    if message.startswith("!kuismafix") and (modstatus or user == OWNER):
+                        try:
+                            if chan not in kuismafix:
+                                kuismafix.append(chan)
+                                sendChanMsg(s, chan, "Channel has been kuismafixed")
+                            elif chan in kuismafix:
+                                kuismafix.remove(chan)
+                                sendChanMsg(s, chan, "Kuismafix has been lifted")
+                        except Exception, e:
+                            print "kuismafix error:", e
 
-            if message.startswith("!request ") and modstatus:
-                try:
-                    lista = dik[chan].get("!lista")
+                    if message.startswith("!request ") and modstatus:
+                        try:
+                            lista = dik[chan].get("!lista")
 
-                    if lista is None:
-                        lista = ""
+                            if lista is None:
+                                lista = ""
 
-                    toAppend = message.split("!request")[1].strip()
+                            toAppend = message.split("!request")[1].strip()
 
-                    lista += toAppend + ", "
+                            lista += toAppend + ", "
 
-                    dik[chan].update({"!lista": lista})
-                    dik.update(dik[chan])
-                    json.dump(dik[chan], open(chan.strip() + "commands", 'wb'), sort_keys=True, indent=3)
-                    cdlist.append(user)
-                    sendChanMsg(s, chan, lista)
+                            dik[chan].update({"!lista": lista})
+                            dik.update(dik[chan])
+                            json.dump(dik[chan], open(chan.strip() + "commands", 'wb'), sort_keys=True, indent=3)
+                            cdlist.append(user)
+                            sendChanMsg(s, chan, lista)
 
-                except Exception, e:
-                    print e
+                        except Exception, e:
+                            print e
 
-            if message.startswith("!delreq") and modstatus:
-                try:
-                    delnum = 1
-                    try:
-                        delnum = int(message.split("!delreq ")[1])
-                    except:
-                        pass
-                    lista = dik[chan].get("!lista")
-                    lista = lista.split(", ")
-                    lista.pop(delnum-1)
-                    lista = ", ".join(lista)
-                    dik[chan].update({"!lista": lista})
-                    dik.update(dik[chan])
-                    json.dump(dik[chan], open(chan.strip() + "commands", 'wb'), sort_keys=True, indent=3)
-                    sendChanMsg(s, chan, lista)
-                except Exception, e:
-                    print e
-                    pass
+                    if message.startswith("!delreq") and modstatus:
+                        try:
+                            delnum = 1
+                            try:
+                                delnum = int(message.split("!delreq ")[1])
+                            except:
+                                pass
+                            lista = dik[chan].get("!lista")
+                            lista = lista.split(", ")
+                            lista.pop(delnum-1)
+                            lista = ", ".join(lista)
+                            dik[chan].update({"!lista": lista})
+                            dik.update(dik[chan])
+                            json.dump(dik[chan], open(chan.strip() + "commands", 'wb'), sort_keys=True, indent=3)
+                            sendChanMsg(s, chan, lista)
+                        except Exception, e:
+                            print e
+                            pass
 
-            if message.startswith("!addcom ") and modstatus:
-                try:
-                    if chan in kuismafix and (user != OWNER):
-                        print "addcom skipped"
-                    else:
-                        addcom(s, dik, chan, user, message)
-                except Exception, e:
-                    print "error at !addcom ", e
+                    if message.startswith("!addcom ") and modstatus:
+                        try:
+                            if chan in kuismafix and (user != OWNER):
+                                print "addcom skipped"
+                            else:
+                                addcom(s, dik, chan, user, message)
+                        except Exception, e:
+                            print "error at !addcom ", e
 
-            if message.startswith("!delcom ") and modstatus:
-                try:
-                    if chan in kuismafix and user != OWNER:
-                        print "delcom skipped"
-                    else:
-                        delcom(s, dik, chan, user, message)
-                except Exception, e:
-                    print "error at !delcom ", e
+                    if message.startswith("!delcom ") and modstatus:
+                        try:
+                            if chan in kuismafix and user != OWNER:
+                                print "delcom skipped"
+                            else:
+                                delcom(s, dik, chan, user, message)
+                        except Exception, e:
+                            print "error at !delcom ", e
 
-            if message.startswith("!editcom ") and modstatus:
-                try:
-                    if chan in kuismafix and (user != OWNER):
-                        print "editcom skipped"
-                    else:
-                        todel = message.split(" ", 2)
-                        delcom(s, dik, chan, user, ("!delcom " + todel[1]))
-                        addcom(s, dik, chan, user, message.replace("!editcom", "!addcom", 1))
-                except Exception, e:
-                    print "error @!editcom ", e
+                    if message.startswith("!editcom ") and modstatus:
+                        try:
+                            if chan in kuismafix and (user != OWNER):
+                                print "editcom skipped"
+                            else:
+                                todel = message.split(" ", 2)
+                                delcom(s, dik, chan, user, ("!delcom " + todel[1]))
+                                addcom(s, dik, chan, user, message.replace("!editcom", "!addcom", 1))
+                        except Exception, e:
+                            print "error @!editcom ", e
 
-            # After doing everything, reset message, user, channel etc
-            message = ""
-            user = ""
-            chan = ""
-            temp = ""
-            readbuffer = ""
-            getit = ""
+                    # After doing everything, reset message, user, channel etc
+                    message = ""
+                    user = ""
+                    chan = ""
+                    line = ""
+                    readbuffer = ""
+                    getit = ""
+        temp = ""
 
 
 if __name__ == '__main__':
