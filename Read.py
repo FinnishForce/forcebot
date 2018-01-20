@@ -51,12 +51,10 @@ def getChannel(line):
 
 def getMod(line):
     try:
-        separate = line.split(";", 6)
-        sep2 = separate[5]
-        if sep2 == "mod=1":
-            return True
-        elif sep2 == "mod=0":
+        if "mod=0" in line:
             return False
+        elif "mod=1" in line:
+            return True
         else:
             print "this shouldn't happen (getmod)"
     except Exception, e:
