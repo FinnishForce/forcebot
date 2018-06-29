@@ -38,22 +38,29 @@ def get_price(search_term):
     :returns: string like "item: 55 gp"
     """
     try:
-        match = process.extractOne(search_term, ITEM_NAMES)[0]
-    except TypeError:
-        return "no result found for " + search_term
+        try:
+            match = process.extractOne(search_term, ITEM_NAMES)[0]
+        except TypeError:
+            return "no result found for " + search_term
 
-    match_id = next(id for id
+        match_id = next(id for id
                     in OSRS_ITEMS.keys()
                     if OSRS_ITEMS[id]["name"] == match)
 
-    params = {"i": match_id, "a": "guidePrice"}
-    result = requests.get(RSBUDDY_API, params=params).json()
+        params = {"i": match_id, "a": "guidePrice"}
+        result = requests.get(RSBUDDY_API, params=params).json()
 
-    price = result["overall"]
+        price = result["overall"]
 
-    # sometimes rsbuddy returns price of 0 if there is not enough traded items.
-    # try old price search for those
-    if price == 0:
+        # sometimes rsbuddy returns price of 0 if there is not enough traded items.
+        # try old price search for those
+        if price == 0:
+            try:
+                match, price = legacy_osrs_price(match)
+            except Exception as e:
+                print "grand exchange error:", e
+                return "no result found for " + search_term
+    except:
         try:
             match, price = legacy_osrs_price(match)
         except Exception as e:
