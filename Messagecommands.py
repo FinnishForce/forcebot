@@ -3,28 +3,57 @@
 from __future__ import division
 
 from Api import *
+from MessageSendingService import sendingService
 from Socket import *
 from omawikipedia import wikipedia_haku
 from osrs_ge import *
 import random
+import os
+
+def refreshStore():
+    with open("joins.txt", 'a+') as joinsfile:
+        joins = joinsfile.readlines()
+
+    store = {}
+
+    for i in range(len(joins)):
+        store.update({joins[i].strip() : ""})
+        filepath = joins[i].strip()+"store"
+
+        if os.path.isfile(filepath) and os.path.getsize(filepath) > 0:
+            store2 = {  joins[i].strip() : json.load( open( filepath, "a+" ) )  }
+        else:
+            defaultdik = { "djalksdjlaksdjlksa" : "0" }
+            json.dump( defaultdik, open(filepath, "a+") )
+            store2 = {joins[i].strip() : json.load(open(filepath, "a+") )}
+
+        store.update(store2)
+
+    return store
+
 
 def tryCommands(s, chan, user, modstatus, message):
     from time import sleep
     from Settings import IDENT, OWNER
+    
+    #store = refreshStore()
+    #if (chan.startswith("jtv")):
+    #    store = store["jtv"]
+    #else:
+    #    store = store[chan]
+    qlist = ["Voit luottaa siihen", "Vain juontaja tietää sen",
+             "Kyllä", "Ei", "En halua kertoa",
+             "Negative", "Tuohon on pakko sanoa ei", "Parempi kun jätän vastaamatta"]
 
-    qlist = ["Varmasti", "Voit luottaa siihen", "Vain juontaja tietää sen", "Melko varmasti",
-             "Kyllä", "Ei", "En osaa sanoa", "Ehkä, ehkä ei",
-             "Negative", "Tuohon on pakko sanoa ei", "Epäilen", "Mietippä sitä autisti"]
-
-    taytelista = ["ananas", "anjovis", "aurajuusto", "sudenliha", "aurinkokuivattu tomaatti", "banaani", "basilika",
+    taytelista = ["ananas", "anjovis", "aurajuusto", "sudenliha", "banaani", "basilika",
                   "bbq", "broileri",
-                  "cheddarjuusto", "chili", "chili (vihreä)", "chili cheese balls", "chilimajoneesi", "chilimajoneesia",
+                  "cheddarjuusto", "khili", "chili (vihreä)", "chili cheese balls", "chilimajoneesi",
                   "chorizo",
                   "curry", "currymajoneesia", "edamjuusto", "fetajuusto", "herkkusieni", "härkä", "jalapeno",
                   "jalopeno",
                   "jauheliha", "juusto", "juustopizza", "jäävuorisalaatti", "kana", "kanan rintafile", "kananmuna",
                   "kananugetteja",
-                  "kapris", "karamelli", "katkarapu", "kebab", "kebabliha", "kevytjuusto", "kinkku", "kirsikkatomaatti",
+                  "kapris", "karamelli", "katkarapu", "kebab", "kevytjuusto", "kinkku", "kirsikkatomaatti",
                   "korianteri", "kuisma", "kuivattu tomaatti", "kukkakaali", "kurkku", "maissi", "majoneesi", "makkara",
                   "maustekurkku",
                   "maustettu häränliha", "merilevä", "mozzarella", "mozzarella-cheddarjuusto", "mozzarellajuusto",
@@ -41,19 +70,95 @@ def tryCommands(s, chan, user, modstatus, message):
                   "salami", "salsa",
                   "savuporo", "siitakesieni", "simpukka", "sinihomejuusto", "sipuli", "sitruunaruoho", "smetana",
                   "tabasco", "talon juusto",
-                  "talon tuorejuusto", "tofu", "tomaatti", "tonnikala", "tuore basilika", "tuore herkkusieni",
+                  "talon tuorejuusto", "tofu", "tonnikala", "tuore basilika", "tuore herkkusieni",
                   "tuore munakoiso",
                   "tuore parsa", "tuore persilja", "tuoretomaatti", "tupla kebabliha", "tupla-valkosipuli",
                   "tuplajuusto", "tuplakatkarapu",
                   "tuplakebab", "turkinpippuri", "valkosipuli", "vihreäpepperoni", "vuohenjuusto",
                   "ylikypsä porsaanliha (pulled pork)",
-                  "tuolijakkara", "hiirenliha", "siika", "mursunliha", "mousen patenttijuusto", "paprika"]
-
+                  "hiirenliha", "siika", "mursunliha", "mousen patenttijuusto", "paprika",
+                  "euron kolikoita", "toukka", "suolaa", "auringonkukansiemeniä", "3x tomaatti", "3/4 osa kupopallollinen jalapenoa"]
+    random.shuffle(taytelista)
     approved = [OWNER, 'mmorz', 'bulftrik']
+    '''
+    try:
+        toStore = message.split()
+        for word in toStore:
+            try:
+                store[word] += 1
+            except:
+                store[word] = 1
+                
+        if chan.startswith("jtv"):
+            json.dump(store, open("jtvstore", 'wb'), sort_keys=True, indent=3)
+        else:
+            json.dump(store, open(chan + "store", 'wb'), sort_keys=True, indent=3)
+    
+        
+    except Exception, exx:
+        print "storing error:"
+        print exx
+    
+    if message.startswith("!howmany "):
+        try:
+            dump, wordToSearch = message.split("!howmany ")
+            answer = str(wordToSearch) + " has been said " + str(store[wordToSearch]) + " times in this channel"
+            print "would sent" + answer
+            sendingService.sendChanMsg(s, chan, answer)
+        except Exception, e:
+            print "error !howmany:", e
 
+    '''
     if message.startswith('!kysy'):
         try:
-            sendChanMsg(s, chan, random.choice(qlist))
+            r=0
+            if "pelataan" in message:
+                qlist.append("Ei pelata")
+                qlist.append("Pelataan")
+                r=1
+            if "kokeillaan" in message:
+                qlist.append("Ei kokeilla")
+                qlist.append("Kokeillaan")
+                r=1
+            if "mennään" in message:
+                qlist.append("Ei mennä")
+                qlist.append("Mennään")
+                r=1
+            if "onko" in message and "homo" in message:
+                qlist.append("Taidat itse olla homo")
+            if "tulee" in message and not "paljo" in message:
+                qlist.append("Ei tule")
+                qlist.append("Tulee tulee")
+                r=1
+            if "joko" in message:
+                qlist.append("Ei vielä")
+                qlist.append("Wait and see")
+            if "onko" in message and "paska" in message:
+                qlist.append("On paska")
+            if "onko" in message:
+                qlist.append("On")
+                qlist.append("Ei ole")
+                r=1
+            if "miksi" in message:
+                qlist.append("Katso striimiä niin ehkä ymmärrät miksi")
+            if "mistä" in message:
+                qlist.append("Varmaan Turusta")
+            if chan in message:
+                qlist.append("Jätän vastaamatta suojatakseni juontajan yksityisyyttä")
+            if "paljo" in message or "monta" in message:
+                qlist.append("Veikkaan että "+str(random.randint(0, 150)))
+            if "tyhmä" in message:
+                qlist.append("Kysymyksen kysyjä taitaa olla tyhmempi")
+            if "huono" in message:
+                qlist.append("On huono")
+                qlist.append("Ei ole huono")
+            if r==1:
+                qlist.remove("Kyllä")
+                qlist.remove("Ei")
+            random.shuffle(qlist)
+            random.shuffle(qlist)
+            random.shuffle(qlist)
+            sendingService.sendChanMsg(s, chan, random.choice(qlist))
         except Exception, e:
             print "error !kysy:", e
 
@@ -61,7 +166,7 @@ def tryCommands(s, chan, user, modstatus, message):
         try:
             with open('gamelist.txt', 'a+') as f:
                 pelilista = json.load(f)
-            sendChanMsg(s, chan, random.choice(pelilista))
+            sendingService.sendChanMsg(s, chan, random.choice(pelilista))
         except Exception, e:
             print "randomgame error", e
 
@@ -74,7 +179,7 @@ def tryCommands(s, chan, user, modstatus, message):
                 tayte.append(random.choice(taytelista))
                 taytelista.remove(tayte[x])
             taytteet = ', '.join(tayte)
-            sendChanMsg(s, chan, taytteet)
+            sendingService.sendChanMsg(s, chan, taytteet)
         except Exception, e:
             print "täytteet error"
             print e
@@ -82,9 +187,9 @@ def tryCommands(s, chan, user, modstatus, message):
     if message.startswith('!juoma'):
         try:
             nimi, hinta, tyyppi, tuotenumero = getDrink()
-            resp = nimi + " (" + tyyppi + ") (" + str(hinta) + "€) https://www.alko.fi/tuotteet/" + str(
-                tuotenumero) + "/"
-            sendChanMsg(s, chan, resp)
+            resp = nimi + " (" + tyyppi + ") (" + str(hinta) + "€)"# https://www.alko.fi/tuotteet/" + str(
+                #tuotenumero) + "/"
+            sendingService.sendChanMsg(s, chan, resp)
         except Exception, e:
             print "!juoma error", e
 
@@ -103,7 +208,7 @@ def tryCommands(s, chan, user, modstatus, message):
             totalhinta = str(round(totalhinta, 2))
             resp = "{0}cl {1} ({2}) ja {3}cl {4} ({5}), annoksen hinta: {6} €".format(maara1, nimi1, tyyppi1, maara2,
                                                                                       nimi2, tyyppi2, totalhinta)
-            sendChanMsg(s, chan, resp)
+            sendingService.sendChanMsg(s, chan, resp)
         except Exception, e:
             print "drink error", e
 
@@ -116,7 +221,7 @@ def tryCommands(s, chan, user, modstatus, message):
 
             title = getTitle(thisChan)
             resp = "[" + thisChan + "] " + title
-            sendChanMsg(s, chan, resp)
+            sendingService.sendChanMsg(s, chan, resp)
         except Exception, e:
             print "!title error "
             print e
@@ -132,7 +237,7 @@ def tryCommands(s, chan, user, modstatus, message):
                 title = rest
                 lang = "en"
 
-            sendChanMsg(s, chan, wikipedia_haku(title, lang))
+            sendingService.sendChanMsg(s, chan, wikipedia_haku(title, lang))
         except:
             print "wikipedia fake error"
 
@@ -141,7 +246,7 @@ def tryCommands(s, chan, user, modstatus, message):
             a, rest = message.split("!wiki ")
             site, title = rest.split("-", 1)
             resp = getWikiaUrl(site, title)
-            sendChanMsg(s, chan, resp)
+            sendingService.sendChanMsg(s, chan, resp)
         except Exception, e:
             print "error at !wiki: "
             print e
@@ -150,7 +255,7 @@ def tryCommands(s, chan, user, modstatus, message):
         try:
             a, title = message.split("!lolwiki ")
             resp = getWikiaUrl("lolwiki", title)
-            sendChanMsg(s, chan, resp)
+            sendingService.sendChanMsg(s, chan, resp)
         except Exception, e:
             print "error at !lolwiki: "
             print e
@@ -159,7 +264,7 @@ def tryCommands(s, chan, user, modstatus, message):
         try:
             a, title = message.split("!rswiki ")
             resp = getWikiaUrl("rswiki", title)
-            sendChanMsg(s, chan, resp)
+            sendingService.sendChanMsg(s, chan, resp)
 
         except Exception, e:
             print "error at !rswiki: "
@@ -169,7 +274,7 @@ def tryCommands(s, chan, user, modstatus, message):
         try:
             a, title = message.split("!hswiki ")
             resp = getWikiaUrl("hswiki", title)
-            sendChanMsg(s, chan, resp)
+            sendingService.sendChanMsg(s, chan, resp)
         except Exception, e:
             print "error at !hswiki: "
             print e
@@ -180,7 +285,7 @@ def tryCommands(s, chan, user, modstatus, message):
             rnd1, rnd2, rnd3 = randint(start, end), randint(start, end), randint(start, end)
             while rnd1 == rnd2 or rnd1 == rnd3 or rnd2 == rnd3:
                 rnd1, rnd2, rnd3 = randint(start, end), randint(start, end), randint(start, end)
-            sendChanMsg(s, chan, (str(rnd1) + " " + str(rnd2) + " " + str(rnd3)))
+            sendingService.sendChanMsg(s, chan, (str(rnd1) + " " + str(rnd2) + " " + str(rnd3)))
         except Exception, e:
             print e
 
@@ -191,17 +296,17 @@ def tryCommands(s, chan, user, modstatus, message):
                 asd, name = message.split("!followstatus ")
                 try:
                     name, difchan = name.split(" ", 1)
-                    sendChanMsg(s, chan, getFollowStatus(name, difchan))
+                    sendingService.sendChanMsg(s, chan, getFollowStatus(name, difchan))
                     sent = 1
                 except:
                     pass
                 if sent == 0:
                     sent = 1
-                    sendChanMsg(s, chan, getFollowStatus(name, chan))
+                    sendingService.sendChanMsg(s, chan, getFollowStatus(name, chan))
             except:
                 pass
             if sent == 0:
-                sendChanMsg(s, chan, getFollowStatus(user, chan))
+                sendingService.sendChanMsg(s, chan, getFollowStatus(user, chan))
             sleep(1)
         except:
             print "followstatus error"
@@ -213,20 +318,43 @@ def tryCommands(s, chan, user, modstatus, message):
                 asd, name = message.split("!follows ")
                 try:
                     name, difchan = name.split(" ", 1)
-                    sendChanMsg(s, chan, getFollowStatus(name, difchan))
+                    sendingService.sendChanMsg(s, chan, getFollowStatus(name, difchan))
                     sent = 1
                 except:
                     pass
                 if sent == 0:
                     sent = 1
-                    sendChanMsg(s, chan, getFollowStatus(name, chan))
+                    sendingService.sendChanMsg(s, chan, getFollowStatus(name, chan))
             except:
                 pass
             if sent == 0:
-                sendChanMsg(s, chan, getFollowStatus(user, chan))
+                sendingService.sendChanMsg(s, chan, getFollowStatus(user, chan))
             sleep(1)
         except:
             print "follows error"
+
+    if message.startswith("!howlong"):
+        try:
+            sent = 0
+            try:
+                asd, name = message.split("!howlong ")
+                try:
+                    name, difchan = name.split(" ", 1)
+                    sendingService.sendChanMsg(s, chan, getFollowStatus(name, difchan))
+                    sent = 1
+                except:
+                    pass
+                if sent == 0:
+                    sent = 1
+                    sendingService.sendChanMsg(s, chan, getFollowStatus(name, chan))
+            except:
+                pass
+            if sent == 0:
+                sendingService.sendChanMsg(s, chan, getFollowStatus(user, chan))
+            sleep(1)
+        except:
+            print "howlong error"
+
 
     if message.startswith("!randomviewer"):
         try:
@@ -244,7 +372,7 @@ def tryCommands(s, chan, user, modstatus, message):
             followStatus = getFollowStatus(chosenone, chan)
             resp = "Viewers in: " + str(vieweramount) + ", chance to win: " + str(
                 round(chance, 2)) + "%, winner: " + chosenone + " (" + followStatus + ")"
-            sendChanMsg(s, chan, resp)
+            sendingService.sendChanMsg(s, chan, resp)
             sleep(1)
 
         except Exception, e:
@@ -255,12 +383,23 @@ def tryCommands(s, chan, user, modstatus, message):
         try:
             viewerlist, vieweramount = getViewers(chan)
             chance = (1.0 / float(vieweramount)) * 100
+            with open("winner.txt", 'r') as f:
+                winner = f.readlines()[0]
+            followStatus = getFollowStatus(winner, chan)
             resp = "Viewers in: " + str(vieweramount) + ", chance to win: " + str(
-                round(chance, 2)) + "%, winner: wetnis"
-            sendChanMsg(s, chan, resp)
+                round(chance, 2)) + "%, winner: " + winner + " (" + followStatus + ")"
+            sendingService.sendChanMsg(s, chan, resp)
         except Exception, e:
             print "wetnis viewer error", e
+            
+    if message.startswith("!setwinner ") and user == OWNER:
+        try:
+            dump, winner = message.split("!setwinner ")
+            with open("winner.txt", 'w') as f:
+                f.write(winner)
 
+        except Exception, e:
+            print "setwinner error", e
 
     if message.startswith("!rng ") or message.startswith("!random "):
         try:
@@ -274,12 +413,10 @@ def tryCommands(s, chan, user, modstatus, message):
 
             if a > b:
                 a, b = b, a
-            elif b > a:
-                pass
 
-            r = randint(int(a), int(b))
-            resp = "You got " + str(r) + " (" + str(int(a)) + "-" + str(int(b)) + ")"
-            sendChanMsg(s, chan, resp)
+            r = randint(a, b)
+            resp = "You got " + str(r) + " (" + str(a) + "-" + str(b) + ")"
+            sendingService.sendChanMsg(s, chan, resp)
         except:
             print "rng error"
 
@@ -287,19 +424,19 @@ def tryCommands(s, chan, user, modstatus, message):
         try:
             a, b = message.split('!pyramid')
             temp = b
-            sendChanMsg(s, chan, temp)
+            sendingService.sendChanMsg(s, chan, temp)
             temp = b + b
-            sendChanMsg(s, chan, temp)
+            sendingService.sendChanMsg(s, chan, temp)
             temp = b + b + b
-            sendChanMsg(s, chan, temp)
+            sendingService.sendChanMsg(s, chan, temp)
             temp = b + b + b + b
-            sendChanMsg(s, chan, temp)
+            sendingService.sendChanMsg(s, chan, temp)
             temp = b + b + b
-            sendChanMsg(s, chan, temp)
+            sendingService.sendChanMsg(s, chan, temp)
             temp = b + b
-            sendChanMsg(s, chan, temp)
+            sendingService.sendChanMsg(s, chan, temp)
             temp = b
-            sendChanMsg(s, chan, temp)
+            sendingService.sendChanMsg(s, chan, temp)
         except Exception, e:
             print "pyramid error ", e
 
@@ -307,7 +444,7 @@ def tryCommands(s, chan, user, modstatus, message):
         try:
             unused, chan_msg = message.split('!adminspeak')
             ch, mg = chan_msg.split(' ', 1)
-            sendChanMsg(s, ch, mg)
+            sendingService.sendChanMsg(s, ch, mg)
         except Exception, e:
             print "error adminspeak ", e
 
@@ -320,7 +457,7 @@ def tryCommands(s, chan, user, modstatus, message):
             else:
                 resp = getSteamStats(convertToSteam64(steam_id))
 
-            sendChanMsg(s, chan, resp)
+            sendingService.sendChanMsg(s, chan, resp)
         except Exception, e:
             print "error in csfind ", e
 
@@ -333,7 +470,7 @@ def tryCommands(s, chan, user, modstatus, message):
             else:
                 resp = getPlayerBans(convertToSteam64(steam_id))
 
-            sendChanMsg(s, chan, resp)
+            sendingService.sendChanMsg(s, chan, resp)
         except Exception, e:
             print "error in vac ", e
 
@@ -341,7 +478,7 @@ def tryCommands(s, chan, user, modstatus, message):
         try:
             unused, searchterm = message.split('!ge ', 1)
             hinta = get_price(searchterm)
-            sendChanMsg(s, chan, hinta)
+            sendingService.sendChanMsg(s, chan, hinta)
         except Exception, e:
             print "mortsin ge error"
             print e
@@ -350,6 +487,6 @@ def tryCommands(s, chan, user, modstatus, message):
         try:
             unused, color = message.split('!color', 1)
             resp = "/color " + color
-            sendChanMsg(s, chan, resp)
+            sendingService.sendChanMsg(s, chan, resp)
         except Exception, e:
             print "error in !color ", e

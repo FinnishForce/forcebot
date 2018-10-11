@@ -29,6 +29,7 @@ def sendChanMsg(s, chan, message):
     try:
         if chan.startswith("jtv"):
             chan = chan.split(",", 1)
+            sleep(2)
             messageTemp = ("PRIVMSG #" + str(chan[0]) + " :/w " + chan[1] + " " + message)
         else:
             messageTemp = ("PRIVMSG #" + str(chan) + " :" + message)

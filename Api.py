@@ -306,11 +306,12 @@ def getFollowing(user, chan):
             resp = urllib2.urlopen(req)
             page = json.load(resp)
             dateFollowed = page['created_at']
+            #print page
         except:
             return "0"
             # timediff = currenttime()-mktime(strptime(dateFollowed, "%Y-%m-%dT%H:%M:%SZ"))
             # delta = timedelta(seconds=timediff-7200)
-        dif = rd.relativedelta(datetime.fromtimestamp(currenttime() - 7200),
+        dif = rd.relativedelta(datetime.fromtimestamp(currenttime() - 10800),
                                datetime.fromtimestamp(mktime(strptime(dateFollowed, "%Y-%m-%dT%H:%M:%SZ"))))
         if dif.years != 0:
             return "{0} years, {1} months, {2} days, {3} hrs".format(dif.years, dif.months, dif.days, dif.hours)

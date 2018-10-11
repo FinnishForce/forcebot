@@ -1,17 +1,33 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-
-from multiprocessing import Process
 import os
 import sys
 import string
+import json
+from multiprocessing import Pool, Queue, Process
+from threading import Thread
+from time import sleep
+from MessageSendingService import sendingService
 from Read import getUser, getMessage, getChannel, getMod, getUserWhisper, getMessageWhisper
-from Socket import openSocket, sendChanMsg
+from Socket import openSocket
 from Init import joinRoom
+from Settings import OWNER
 from Messagecommands import tryCommands
 from Api import *
 from handleMsg import handleMsg, addcom, delcom
+
+
+class SocketHelper:
+    def __init__(self):
+        self.socket = None
+    def setSocket(self, s):
+        self.socket = s
+    def getSocket(self):
+        return self.socket
+
+socketHelper = SocketHelper()
+
 
 def refreshCmds():
     with open("joins.txt", 'a+') as joinsfile:
@@ -35,25 +51,105 @@ def refreshCmds():
     return dik
 
 
-def main_loop():
-    s = openSocket()
+def parseInfo(args):
+    s = socketHelper.getSocket()
+    #print s
+    msg = args
+    if "PING" in msg:
+        print "PINGPONG"
+        s.send("PONG :tmi.twitch.tv\r\n")
+    else:
+        if "PRIVMSG" in msg:
+            user = getUser(msg).strip().lower()
+            message = getMessage(msg).strip()
+            chan = getChannel(msg).strip().lower()
+            modstatus = getMod(msg)
+            if user == OWNER:
+                modstatus = True
+            return user, message, chan, modstatus
+
+        if "WHISPER" in msg:
+            user = getUserWhisper(msg).strip().lower()
+            message = getMessageWhisper(msg).strip()
+            chan = "jtv," + user
+            return user, message, chan, True
+
+
+def messageActions(messageQueue):
+    s = socketHelper.getSocket()
+    Thread(target=messageLimitHandler).start()
+    kuismafix = ["strongkuisma", "harshmouse", "teukka"]
+    while True:
+        (user, message, chan, modstatus, dik) = messageQueue.get()
+        Thread(target=handleMsg, args=(s, dik, modstatus, chan, user, message,)).start()
+        Thread(target=tryCommands, args=(s, chan, user, modstatus, message,)).start()
+
+        if "has won the giveaway" in message and user == "nightbot":
+            try:
+                search, b = message.split(" ", 1)
+                sendingService.sendChanMsg(s, chan, getFollowStatus(search, chan))
+            except Exception, e:
+                print "nightbot giveaway detection error:", e
+
+        if message.startswith("!kuismafix") and (modstatus or user == OWNER):
+            try:
+                if chan not in kuismafix:
+                    kuismafix.append(chan)
+                    sendingService.sendChanMsg(s, chan, "Channel has been kuismafixed")
+                elif chan in kuismafix:
+                    kuismafix.remove(chan)
+                    sendingService.sendChanMsg(s, chan, "Kuismafix has been lifted")
+            except Exception, e:
+                print "kuismafix error:", e
+
+        if message.startswith("!addcom ") and modstatus:
+            try:
+                if chan in kuismafix and (user != OWNER):
+                    print "addcom skipped"
+                else:
+                    addcom(s, dik, chan, user, message)
+            except Exception, e:
+                print "error at !addcom ", e
+
+        if message.startswith("!delcom ") and modstatus:
+            try:
+                if chan in kuismafix and user != OWNER:
+                    print "delcom skipped"
+                else:
+                    delcom(s, dik, chan, user, message)
+            except Exception, e:
+                print "error at !delcom ", e
+
+        if message.startswith("!editcom ") and modstatus:
+            try:
+                if chan in kuismafix and (user != OWNER):
+                    print "editcom skipped"
+                else:
+                    todel = message.split(" ", 2)
+                    delcom(s, dik, chan, user, ("!delcom " + todel[1]))
+                    addcom(s, dik, chan, user, message.replace("!editcom", "!addcom", 1))
+            except Exception, e:
+                print "error @!editcom ", e
+
+
+def messageLimitHandler():
+    while 1:
+        sendingService.addMessagesLeft(1)
+        sleep(1.5)
+
+
+def mainLoop():
+    s = socketHelper.getSocket()
+    incomingPool = Pool(1)
     joinRoom(s)
-    #s.setblocking(0)
-
-    chan = ""
-    user = ""
-    modstatus = False
-    message = ""
     s.send("CAP REQ :twitch.tv/tags\n")
-    readbuffer = ""
-    approved = [OWNER, 'mmorz', 'bulftrik']
-    cdlist = []
-    kuismafix = ["strongkuisma", "harshmouse"]
-
     dik = refreshCmds()
     reload(sys)
     sys.setdefaultencoding("utf-8")
-    sendChanMsg(s, OWNER, "started")
+    sendingService.sendChanMsg(s, OWNER, "started")
+    msgQ = Queue()
+
+    Process(target=messageActions, args=(msgQ,)).start()
 
     # Start looping
     while 1:
@@ -64,146 +160,36 @@ def main_loop():
             if len(getit) == 0:
                 print "Disconnected..."
                 break
-            readbuffer = readbuffer + getit
-            temp = string.split(readbuffer, "\r\n")
-            readbuffer = temp.pop()
+            # print getit
+            temp = filter(None, string.split(getit.encode("utf-8"), "\r\n"))
         except Exception, e:
-            pass
+            print "socket recv? error: ", e
+            break
+        sendingService.messagesLeft -= 1
+        templines = list()
+        for i in xrange(len(temp)):
+            pack = (temp[i])
+            templines.append(pack)
 
-        if temp != "":
-            for line in temp:
-                try:
-                    if "PING" in line:
-                        s.send("PONG :tmi.twitch.tv\r\n")
-                    else:
-                        if "PRIVMSG" in line:
-                            user = getUser(line).encode('utf8').strip().lower()
-                            message = getMessage(line).encode('utf8').strip()
-                            chan = getChannel(line).encode('utf8').strip().lower()
-                            modstatus = getMod(line)
-
-
-                        if "WHISPER" in line:
-                            user = getUserWhisper(line).encode('utf8').strip().lower()
-                            message = getMessageWhisper(line).encode('utf8').strip()
-                            chan = "jtv," + user
-                            modstatus = False
-                            if user == OWNER:
-                                modstatus = True
-                except Exception, e:
-                    print "Error in 'for line in temp' ->", e
-
-                if line != "" and message != "" and ('PRIVMSG' or 'WHISPER' in line) and not line.startswith('PING :tmi.twitch.tv'):
-
-                    if modstatus or user == chan or user in approved:
-                        modstatus = True
-
-                    # Check if message is a command
-                    Process(target=handleMsg, args=(s, dik, modstatus, chan, user, message,)).start()
-                    Process(target=tryCommands, args=(s, chan, user, modstatus, message,)).start()
-
-                    if "has won the giveaway" in message and user == "nightbot":
-                        try:
-                            search, b = message.split(" ", 1)
-                            sendChanMsg(s, chan, getFollowStatus(search, chan))
-                        except Exception, e:
-                            print "nightbot giveaway detection error:", e
-
-                    if message.startswith("!kuismafix") and (modstatus or user == OWNER):
-                        try:
-                            if chan not in kuismafix:
-                                kuismafix.append(chan)
-                                sendChanMsg(s, chan, "Channel has been kuismafixed")
-                            elif chan in kuismafix:
-                                kuismafix.remove(chan)
-                                sendChanMsg(s, chan, "Kuismafix has been lifted")
-                        except Exception, e:
-                            print "kuismafix error:", e
-
-                    if message.startswith("!request ") and modstatus:
-                        try:
-                            lista = dik[chan].get("!lista")
-
-                            if lista is None:
-                                lista = ""
-
-                            toAppend = message.split("!request")[1].strip()
-
-                            lista += toAppend + ", "
-
-                            dik[chan].update({"!lista": lista})
-                            dik.update(dik[chan])
-                            json.dump(dik[chan], open(chan.strip() + "commands", 'wb'), sort_keys=True, indent=3)
-                            cdlist.append(user)
-                            sendChanMsg(s, chan, lista)
-
-                        except Exception, e:
-                            print e
-
-                    if message.startswith("!delreq") and modstatus:
-                        try:
-                            delnum = 1
-                            try:
-                                delnum = int(message.split("!delreq ")[1])
-                            except:
-                                pass
-                            lista = dik[chan].get("!lista")
-                            lista = lista.split(", ")
-                            lista.pop(delnum-1)
-                            lista = ", ".join(lista)
-                            dik[chan].update({"!lista": lista})
-                            dik.update(dik[chan])
-                            json.dump(dik[chan], open(chan.strip() + "commands", 'wb'), sort_keys=True, indent=3)
-                            sendChanMsg(s, chan, lista)
-                        except Exception, e:
-                            print e
-                            pass
-
-                    if message.startswith("!addcom ") and modstatus:
-                        try:
-                            if chan in kuismafix and (user != OWNER):
-                                print "addcom skipped"
-                            else:
-                                addcom(s, dik, chan, user, message)
-                        except Exception, e:
-                            print "error at !addcom ", e
-
-                    if message.startswith("!delcom ") and modstatus:
-                        try:
-                            if chan in kuismafix and user != OWNER:
-                                print "delcom skipped"
-                            else:
-                                delcom(s, dik, chan, user, message)
-                        except Exception, e:
-                            print "error at !delcom ", e
-
-                    if message.startswith("!editcom ") and modstatus:
-                        try:
-                            if chan in kuismafix and (user != OWNER):
-                                print "editcom skipped"
-                            else:
-                                todel = message.split(" ", 2)
-                                delcom(s, dik, chan, user, ("!delcom " + todel[1]))
-                                addcom(s, dik, chan, user, message.replace("!editcom", "!addcom", 1))
-                        except Exception, e:
-                            print "error @!editcom ", e
-
-                    # After doing everything, reset message, user, channel etc
-                    message = ""
-                    user = ""
-                    chan = ""
-                    line = ""
-                    readbuffer = ""
-                    getit = ""
-        temp = ""
+        msgArr = incomingPool.map(parseInfo, templines)
+        for resp in msgArr:
+            if resp != None:
+                respList = list(resp)
+                respList.append(dik)
+                msgQ.put(respList)
 
 
 if __name__ == '__main__':
     while 1:
         try:
-            print "Starting..."
-            main_loop()
-        except Exception, e:
-            print "mainloop error: ", e
+            if socketHelper.getSocket() != None:
+                socketHelper.getSocket().close()
+        except:
             pass
-
+        socketHelper.setSocket(openSocket())
+        try:
+            print "Starting..."
+            mainLoop()
+        except Exception, e:
+            print "highest level program error: ", e
+            pass

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from Api import getUptime
 from random import randint
-from Socket import sendChanMsg
+from MessageSendingService import sendingService
 import json
 
 
@@ -44,10 +44,10 @@ def handleMsg(s, dik, modstatus, chan, user, message):
                 output = output.replace('$own$', own)
 
             if not modonlycmd:
-                sendChanMsg(s, chan, output)
+                sendingService.sendChanMsg(s, chan, output)
             elif modonlycmd:
                 if modstatus and output != "":
-                    sendChanMsg(s, chan, output)
+                    sendingService.sendChanMsg(s, chan, output)
     except Exception, e:
         pass
 
@@ -72,7 +72,7 @@ def delcom(s, dik, chan, user, message):
             else:
                 json.dump(cmds, open(chan.strip() + "commands", 'wb'), sort_keys=True, indent=3)
             chan = "jtv," + user
-            sendChanMsg(s, chan, resp)
+            sendingService.sendChanMsg(s, chan, resp)
     except Exception, e:
         print "delcom error:", e
 
@@ -105,10 +105,10 @@ def addcom(s, dik, chan, user, message):
                 json.dump(cmds, open(chan.strip() + "commands", 'wb'), sort_keys=True, indent=3)
             resp = "[ADDED]: " + cmd + " : " + action
             chan = "jtv," + user
-            sendChanMsg(s, chan, resp)
+            sendingService.sendChanMsg(s, chan, resp)
         else:
             resp = cmd + " : " + cmdDoesExist + " already exists, please !delcom it first"
             chan = "jtv," + user
-            sendChanMsg(s, chan, resp)
+            sendingService.sendChanMsg(s, chan, resp)
     except Exception, e:
         print "addcom error:", e
