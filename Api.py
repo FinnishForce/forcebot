@@ -339,7 +339,7 @@ def getFollowing(user, chan):
             return "{0} hours, {1} minutes".format(dif.hours, dif.minutes)
         return "{0} minutes, {1} seconds".format(dif.minutes, dif.seconds)
     except Exception, e:
-        print "getFollowing error at Api.py, info:", e
+        print "getFollowing error at api.py, info:", e
 
 
 def getFollowStatus(user, chan):

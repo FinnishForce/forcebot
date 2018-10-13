@@ -7,7 +7,7 @@ import os
 import random
 from time import sleep
 
-from Api import getDrink, getMix, getTitle, getWikiaUrl, getFollowStatus, getSteamStats, getPlayerBans, convertToSteam64, getViewers
+from api import getDrink, getMix, getTitle, getWikiaUrl, getFollowStatus, getSteamStats, getPlayerBans, convertToSteam64, getViewers
 from message_sending_service import sendingService
 from settings import IDENT, OWNER
 from omawikipedia import wikipedia_haku

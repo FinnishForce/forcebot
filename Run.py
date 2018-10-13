@@ -9,13 +9,13 @@ from multiprocessing import Pool, Queue
 from threading import Thread
 from time import sleep
 
-from Api import getFollowStatus
-from Init import joinRoom
+from api import getFollowStatus
+from init import joinRoom
 from message_sending_service import sendingService
 from hardcoded_commands import hardcoded_commands
-from Read import getUser, getMessage, getChannel, getMod, getUserWhisper, getMessageWhisper, getUserID
+from read import getUser, getMessage, getChannel, getMod, getUserWhisper, getMessageWhisper, getUserID
 from settings import OWNER
-from Socket import openSocket
+from socket import openSocket
 from regular_commands import regular_commands, addcom, delcom
 
 
