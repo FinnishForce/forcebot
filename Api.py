@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import json
 import urllib2
+
 from datetime import datetime, timedelta
 from random import randint
 from time import sleep, mktime, strptime
@@ -10,7 +11,7 @@ import wikia
 import wikipedia
 from dateutil import relativedelta as rd
 
-from Settings import *
+from settings import *
 
 
 def getSteamStats(steamid):
@@ -100,16 +101,15 @@ def getSteamStats(steamid):
 
 def getUptime(chan):
     try:
-        url = ("https://api.twitch.tv/kraken/streams/" + chan)
+        url = ("https://api.twitch.tv/helix/streams?user_login=" + chan)
         req = urllib2.Request(url)
         req.add_header("Client-ID", TCLIENTID)
         resp = urllib2.urlopen(req)
         page = json.load(resp)
-
-        if page['stream'] == None:
+        if page["data"] == []:
             return "0:00:00 (stream offline)"
 
-        started = page['stream']['created_at']
+        started = page['data'][0]['started_at']
         timeFormat = "%Y-%m-%dT%H:%M:%SZ"
         startdate = datetime.strptime(started, timeFormat)
         current = datetime.utcnow()
@@ -272,12 +272,12 @@ def getWikipediaUrl(title, lang):
 
 def getTitle(chan):
     try:
-        url = ("https://api.twitch.tv/kraken/channels/" + chan)
+        url = ("https://api.twitch.tv/helix/streams?user_login=" + chan)
         req = urllib2.Request(url)
         req.add_header("Client-ID", TCLIENTID)
         resp = urllib2.urlopen(req)
         page = json.load(resp)
-        title = page['status']
+        title = page["data"][0]["title"]
         return title
     except Exception, e:
         print "error gettitle "
@@ -296,18 +296,34 @@ def getDrink():
     except Exception, e:
         print "getdrink error", e
 
+def getID(name):
+    try:
+        url = ("https://api.twitch.tv/helix/users?login=" + name)
+        req = urllib2.Request(url)
+        req.add_header("Client-ID", TCLIENTID)
+        resp = urllib2.urlopen(req)
+        page = json.load(resp)
+        return page.get("data")[0]["id"]    
+    except Exception, e:
+        print "getID error ->", e
 
 def getFollowing(user, chan):
     try:
         try:
-            url = ("https://api.twitch.tv/kraken/users/" + user + "/follows/channels/" + chan)
+            userid = getID(user)
+            chanid = getID(chan)
+            url = ("https://api.twitch.tv/helix/users/follows?from_id=" + userid + "&to_id=" + chanid)
+            print url
             req = urllib2.Request(url)
             req.add_header("Client-ID", TCLIENTID)
+            print req
             resp = urllib2.urlopen(req)
             page = json.load(resp)
-            dateFollowed = page['created_at']
-            #print page
-        except:
+            print page
+            dateFollowed = page['data'][0]['followed_at']
+            
+        except Exception, e:
+            print e
             return "0"
             # timediff = currenttime()-mktime(strptime(dateFollowed, "%Y-%m-%dT%H:%M:%SZ"))
             # delta = timedelta(seconds=timediff-7200)
