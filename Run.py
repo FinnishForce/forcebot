@@ -12,7 +12,7 @@ from command_helper import cmds
 from hardcoded_commands import hardcoded_commands
 from init import joinRoom
 from message_sending_service import sendingService
-from read import getUser, getMessage, getChannel, getMod, getUserWhisper, getMessageWhisper, getUserID
+from read import get_user, get_message, get_channel, get_mod, get_user_whisper, get_message_whisper, get_user_id
 from regular_commands import regular_commands, addcom, delcom
 from settings import OWNER
 from socket_helper import socketHelper
@@ -26,22 +26,15 @@ def parse_info(args):
         print "PINGPONG"
         s.send("PONG :tmi.twitch.tv\r\n")
     else:
-        if "PRIVMSG" in msg:
-            user = getUser(msg).strip().lower()
-            message = getMessage(msg).strip()
-            chan = getChannel(msg).strip().lower()
-            modstatus = getMod(msg)
-            userid = getUserID(msg)
-            if user == OWNER:
-                modstatus = True
-            return userid, user, message, chan, modstatus
+        user = get_user(msg).strip().lower()
+        message = get_message(msg).strip()
+        chan = get_channel(msg).strip().lower()
+        modstatus = get_mod(msg)
+        userid = get_user_id(msg)
+        if user == OWNER:
+            modstatus = True
+        return userid, user, message, chan, modstatus
 
-        if "WHISPER" in msg:
-            user = getUserWhisper(msg).strip().lower()
-            message = getMessageWhisper(msg).strip()
-            chan = "jtv," + user
-            userid = getUserID(msg)
-            return userid, user, message, chan, True
 
 
 def message_actions(message_queue):
