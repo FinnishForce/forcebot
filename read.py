@@ -24,16 +24,6 @@ def get_user_id(line):
         print "getuserid error ->", e
 
 
-def get_user_whisper(line):
-    try:
-        separate = line.split(".tmi.twitch.tv WHISPER ")
-        user = separate[0].split("@", 4)
-        user = user[2]
-        return user.strip().lower()
-    except Exception, e:
-        print "Getuser error ->", e
-
-
 def get_message(line):
     try:
         if ".tmi.twitch.tv PRIVMSG #" in line:
@@ -48,16 +38,6 @@ def get_message(line):
         return message
 
     except Exception, e:
-        print "Getmessage error ->", e
-
-
-def get_message_whisper(line):
-   try:
-        separate = line.split(".tmi.twitch.tv WHISPER ")
-        message = separate[1].split(" :", 1)
-        message = message[1]
-        return message
-   except Exception, e:
         print "Getmessage error ->", e
 
 
