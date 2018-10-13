@@ -7,7 +7,7 @@ import os
 import random
 from time import sleep
 
-from api import getDrink, getMix, getTitle, getWikiaUrl, getFollowStatus, getSteamStats, getPlayerBans, convertToSteam64, getViewers
+from api import get_drink, get_drink_mix, get_title, get_wikia_url, get_follow_status, get_steam_stats, get_steam_bans, convert_to_steam64, get_viewers
 from message_sending_service import sendingService
 from settings import IDENT, OWNER
 from omawikipedia import wikipedia_haku
@@ -186,7 +186,7 @@ def hardcoded_commands(s, chan, user, modstatus, message):
 
     if message.startswith('!juoma'):
         try:
-            nimi, hinta, tyyppi, tuotenumero = getDrink()
+            nimi, hinta, tyyppi, tuotenumero = get_drink()
             resp = nimi + " (" + tyyppi + ") (" + str(hinta) + "€)"# https://www.alko.fi/tuotteet/" + str(
                 #tuotenumero) + "/"
             sendingService.send_msg(s, chan, resp)
@@ -195,8 +195,8 @@ def hardcoded_commands(s, chan, user, modstatus, message):
 
     if message.startswith('!drinkki'):
         try:
-            nimi1, lhinta1, tyyppi1 = getMix()
-            nimi2, lhinta2, tyyppi2 = getMix()
+            nimi1, lhinta1, tyyppi1 = get_drink_mix()
+            nimi2, lhinta2, tyyppi2 = get_drink_mix()
             maara1 = str(random.randint(1, 10))
             maara2 = str(random.randint(1, 10))
             maara1 = maara1.replace(",", ".")
@@ -219,7 +219,7 @@ def hardcoded_commands(s, chan, user, modstatus, message):
             except:
                 thisChan = chan
 
-            title = getTitle(thisChan)
+            title = get_title(thisChan)
             resp = "[" + thisChan + "] " + title
             sendingService.send_msg(s, chan, resp)
         except Exception, e:
@@ -245,7 +245,7 @@ def hardcoded_commands(s, chan, user, modstatus, message):
         try:
             a, rest = message.split("!wiki ")
             site, title = rest.split("-", 1)
-            resp = getWikiaUrl(site, title)
+            resp = get_wikia_url(site, title)
             sendingService.send_msg(s, chan, resp)
         except Exception, e:
             print "error at !wiki: "
@@ -254,7 +254,7 @@ def hardcoded_commands(s, chan, user, modstatus, message):
     if message.startswith("!lolwiki "):
         try:
             a, title = message.split("!lolwiki ")
-            resp = getWikiaUrl("lolwiki", title)
+            resp = get_wikia_url("lolwiki", title)
             sendingService.send_msg(s, chan, resp)
         except Exception, e:
             print "error at !lolwiki: "
@@ -263,7 +263,7 @@ def hardcoded_commands(s, chan, user, modstatus, message):
     if message.startswith("!rswiki "):
         try:
             a, title = message.split("!rswiki ")
-            resp = getWikiaUrl("rswiki", title)
+            resp = get_wikia_url("rswiki", title)
             sendingService.send_msg(s, chan, resp)
 
         except Exception, e:
@@ -273,7 +273,7 @@ def hardcoded_commands(s, chan, user, modstatus, message):
     if message.startswith("!hswiki "):
         try:
             a, title = message.split("!hswiki ")
-            resp = getWikiaUrl("hswiki", title)
+            resp = get_wikia_url("hswiki", title)
             sendingService.send_msg(s, chan, resp)
         except Exception, e:
             print "error at !hswiki: "
@@ -297,17 +297,17 @@ def hardcoded_commands(s, chan, user, modstatus, message):
                 asd, name = message.split("!followstatus ")
                 try:
                     name, difchan = name.split(" ", 1)
-                    sendingService.send_msg(s, chan, getFollowStatus(name, difchan))
+                    sendingService.send_msg(s, chan, get_follow_status(name, difchan))
                     sent = 1
                 except:
                     pass
                 if sent == 0:
                     sent = 1
-                    sendingService.send_msg(s, chan, getFollowStatus(name, chan))
+                    sendingService.send_msg(s, chan, get_follow_status(name, chan))
             except:
                 pass
             if sent == 0:
-                sendingService.send_msg(s, chan, getFollowStatus(user, chan))
+                sendingService.send_msg(s, chan, get_follow_status(user, chan))
             sleep(1)
         except:
             print "followstatus error"
@@ -319,17 +319,17 @@ def hardcoded_commands(s, chan, user, modstatus, message):
                 asd, name = message.split("!follows ")
                 try:
                     name, difchan = name.split(" ", 1)
-                    sendingService.send_msg(s, chan, getFollowStatus(name, difchan))
+                    sendingService.send_msg(s, chan, get_follow_status(name, difchan))
                     sent = 1
                 except:
                     pass
                 if sent == 0:
                     sent = 1
-                    sendingService.send_msg(s, chan, getFollowStatus(name, chan))
+                    sendingService.send_msg(s, chan, get_follow_status(name, chan))
             except:
                 pass
             if sent == 0:
-                sendingService.send_msg(s, chan, getFollowStatus(user, chan))
+                sendingService.send_msg(s, chan, get_follow_status(user, chan))
             sleep(1)
         except:
             print "follows error"
@@ -341,24 +341,24 @@ def hardcoded_commands(s, chan, user, modstatus, message):
                 asd, name = message.split("!followage ")
                 try:
                     name, difchan = name.split(" ", 1)
-                    sendingService.send_msg(s, chan, getFollowStatus(name, difchan))
+                    sendingService.send_msg(s, chan, get_follow_status(name, difchan))
                     sent = 1
                 except:
                     pass
                 if sent == 0:
                     sent = 1
-                    sendingService.send_msg(s, chan, getFollowStatus(name, chan))
+                    sendingService.send_msg(s, chan, get_follow_status(name, chan))
             except:
                 pass
             if sent == 0:
-                sendingService.send_msg(s, chan, getFollowStatus(user, chan))
+                sendingService.send_msg(s, chan, get_follow_status(user, chan))
             sleep(1)
         except:
             print "followage error"
 
     if message.startswith("!randomviewer"):
         try:
-            viewerlist, vieweramount = getViewers(chan)
+            viewerlist, vieweramount = get_viewers(chan)
             try:
                 viewerlist.remove(OWNER)
                 viewerlist.remove(IDENT)
@@ -369,7 +369,7 @@ def hardcoded_commands(s, chan, user, modstatus, message):
             chosenone = random.choice(viewerlist)
 
             chance = (1.0 / float(vieweramount)) * 100
-            followStatus = getFollowStatus(chosenone, chan)
+            followStatus = get_follow_status(chosenone, chan)
             resp = "Viewers in: " + str(vieweramount) + ", chance to win: " + str(
                 round(chance, 2)) + "%, winner: " + chosenone + " (" + followStatus + ")"
             sendingService.send_msg(s, chan, resp)
@@ -381,11 +381,11 @@ def hardcoded_commands(s, chan, user, modstatus, message):
 
     if message.startswith("!rаndomviewer"):
         try:
-            viewerlist, vieweramount = getViewers(chan)
+            viewerlist, vieweramount = get_viewers(chan)
             chance = (1.0 / float(vieweramount)) * 100
             with open("winner.txt", 'r') as f:
                 winner = f.readlines()[0]
-            followStatus = getFollowStatus(winner, chan)
+            followStatus = get_follow_status(winner, chan)
             resp = "Viewers in: " + str(vieweramount) + ", chance to win: " + str(
                 round(chance, 2)) + "%, winner: " + winner + " (" + followStatus + ")"
             sendingService.send_msg(s, chan, resp)
@@ -449,9 +449,9 @@ def hardcoded_commands(s, chan, user, modstatus, message):
             unused, steam_id = message.split('!csfind ')
             steam_id = str(steam_id)
             if steam_id.startswith("7656119"):
-                resp = getSteamStats(steam_id)
+                resp = get_steam_stats(steam_id)
             else:
-                resp = getSteamStats(convertToSteam64(steam_id))
+                resp = get_steam_stats(convert_to_steam64(steam_id))
 
             sendingService.send_msg(s, chan, resp)
         except Exception, e:
@@ -462,9 +462,9 @@ def hardcoded_commands(s, chan, user, modstatus, message):
             unused, steam_id = message.split('!vac ')
             steam_id = str(steam_id)
             if steam_id.startswith("7656119"):
-                resp = getPlayerBans(steam_id)
+                resp = get_steam_bans(steam_id)
             else:
-                resp = getPlayerBans(convertToSteam64(steam_id))
+                resp = get_steam_bans(convert_to_steam64(steam_id))
 
             sendingService.send_msg(s, chan, resp)
         except Exception, e:

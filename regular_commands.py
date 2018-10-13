@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from Api import getUptime
+from api import get_uptime
 from random import randint
 from message_sending_service import sendingService
 import json
@@ -28,7 +28,7 @@ def regular_commands(s, dik, modstatus, chan, user, message):
                 modonlycmd = True
 
             if '$uptime$' in output:
-                output = output.replace('$uptime$', getUptime(chan))
+                output = output.replace('$uptime$', get_uptime(chan))
 
             if '$random100$' in output:
                 output = output.replace('$random100$', str(randint(1, 100)))

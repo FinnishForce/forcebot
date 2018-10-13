@@ -14,7 +14,7 @@ from dateutil import relativedelta as rd
 from settings import *
 
 
-def getSteamStats(steamid):
+def get_steam_stats(steamid):
     try:
         favs = ['1', 'Desert Eagle', '2', 'Dual Berettas', '3', 'Five-SeveN', '4', 'Glock-18', '7', 'AK-47', '8', 'AUG',
                 '9', 'AWP', '10', 'FAMAS', '11', 'G3SG1', '13', 'Galil AR', '14', 'M249', '16', 'M4A4 or A1', '17',
@@ -83,7 +83,7 @@ def getSteamStats(steamid):
         if (totalwins < 16):
             result = "Score:"
         playerName = ""
-        playerName = getPlayerName(steamid)
+        playerName = get_steam_player_name(steamid)
 
         roundscore = playerName + "'s last game: " + result + " " + str(last_wins) + "-" + str(last_loses)
         koodee = str(last_kills) + "K/" + str(last_deaths) + "D (" + str(kd) + " KD), " + str(last_mvps) + " MVPS"
@@ -95,11 +95,11 @@ def getSteamStats(steamid):
 
 
     except Exception, e:
-        print "getSteamStats api.py error "
+        print "get_steam_stats api.py error "
         print e
 
 
-def getUptime(chan):
+def get_uptime(chan):
     try:
         url = ("https://api.twitch.tv/helix/streams?user_login=" + chan)
         req = urllib2.Request(url)
@@ -124,7 +124,7 @@ def getUptime(chan):
         print e
 
 
-def convertToSteam64(vanity):
+def convert_to_steam64(vanity):
     try:
         url = (
             "http://api.steampowered.com/ISteamUser/ResolveVanityURL/v0001/?key=" + STEAM_API_KEY + "&vanityurl=" + vanity)
@@ -137,11 +137,11 @@ def convertToSteam64(vanity):
         else:
             print "vanity url not found"
     except Exception, e:
-        print "error in convertToSteam64 "
+        print "error in convert_to_steam64 "
         print e
 
 
-def getPlayerName(steamid):
+def get_steam_player_name(steamid):
     try:
         playerName = "null"
         url = (
@@ -154,11 +154,11 @@ def getPlayerName(steamid):
         return playerName
 
     except Exception, e:
-        print "error in getPlayerName "
+        print "error in get_steam_player_name "
         print e
 
 
-def getPlayerBans(steamid):
+def get_steam_bans(steamid):
     try:
         playerName = "null"
         url = ("http://api.steampowered.com/ISteamUser/GetPlayerBans/v1/?key=" + STEAM_API_KEY + "&steamids=" + steamid)
@@ -171,7 +171,7 @@ def getPlayerBans(steamid):
             gamebans = entry['NumberOfGameBans']
             ecoban = entry['EconomyBan']
 
-        playerName = getPlayerName(steamid)
+        playerName = get_steam_player_name(steamid)
 
         if lastban == 0 and vacs == 0 and gamebans == 0:
             lastban = ""
@@ -182,11 +182,11 @@ def getPlayerBans(steamid):
             gamebans) + " game bans. " + "Trade ban status: " + str(ecoban) + ". " + str(lastban)
         return resp
     except Exception, e:
-        print "error in getPlayerBans "
+        print "error in get_steam_bans "
         print e
 
 
-def getViewers(chan):
+def get_viewers(chan):
     try:
         errors = 0
         while (errors <= 10):
@@ -217,11 +217,11 @@ def getViewers(chan):
 
 
     except Exception, e:
-        print "getViewers error "
+        print "get_viewers error "
         print e
 
 
-def getWikiaUrl(site, title):
+def get_wikia_url(site, title):
     try:
         if site == "lolwiki":
             site = "leagueoflegends"
@@ -241,7 +241,7 @@ def getWikiaUrl(site, title):
         print "api wikiaurl error"
 
 
-def getAnyWikiaUrl(site, title):
+def get_any_wikia_url(site, title):
     try:
         search = wikia.search(site, title)
         title = search[0]
@@ -253,7 +253,7 @@ def getAnyWikiaUrl(site, title):
         print "api anywikiurl error"
 
 
-def getWikipediaUrl(title, lang):
+def get_wikipedia_url(title, lang):
     try:
         wikipedia.set_lang(lang)
         search = wikipedia.search(title)
@@ -270,7 +270,7 @@ def getWikipediaUrl(title, lang):
         print "wikipedia error"
 
 
-def getTitle(chan):
+def get_title(chan):
     try:
         url = ("https://api.twitch.tv/helix/streams?user_login=" + chan)
         req = urllib2.Request(url)
@@ -284,7 +284,7 @@ def getTitle(chan):
         print e
 
 
-def getDrink():
+def get_drink():
     try:
         with open('alko.json') as alkofile:
             data = json.load(alkofile)
@@ -296,7 +296,7 @@ def getDrink():
     except Exception, e:
         print "getdrink error", e
 
-def getID(name):
+def get_twitch_id(name):
     try:
         url = ("https://api.twitch.tv/helix/users?login=" + name)
         req = urllib2.Request(url)
@@ -305,13 +305,13 @@ def getID(name):
         page = json.load(resp)
         return page.get("data")[0]["id"]    
     except Exception, e:
-        print "getID error ->", e
+        print "get_twitch_id error ->", e
 
-def getFollowing(user, chan):
+def get_following(user, chan):
     try:
         try:
-            userid = getID(user)
-            chanid = getID(chan)
+            userid = get_twitch_id(user)
+            chanid = get_twitch_id(chan)
             url = ("https://api.twitch.tv/helix/users/follows?from_id=" + userid + "&to_id=" + chanid)
             print url
             req = urllib2.Request(url)
@@ -339,12 +339,12 @@ def getFollowing(user, chan):
             return "{0} hours, {1} minutes".format(dif.hours, dif.minutes)
         return "{0} minutes, {1} seconds".format(dif.minutes, dif.seconds)
     except Exception, e:
-        print "getFollowing error at api.py, info:", e
+        print "get_following error at api.py, info:", e
 
 
-def getFollowStatus(user, chan):
+def get_follow_status(user, chan):
     try:
-        howlong = getFollowing(user, chan)
+        howlong = get_following(user, chan)
         if howlong == "0":
             return user + " is not following " + chan
         else:
@@ -353,7 +353,7 @@ def getFollowStatus(user, chan):
         print "get follow status error, info:", e
 
 
-def getMix():
+def get_drink_mix():
     try:
         with open('alko.json') as alkofile:
             data = json.load(alkofile)
