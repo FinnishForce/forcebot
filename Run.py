@@ -3,20 +3,20 @@
 
 import json
 import os
+import socket
 import string
 import sys
 from multiprocessing import Pool, Queue
 from threading import Thread
 from time import sleep
 
-from api import getFollowStatus
+from api import get_follow_status
+from hardcoded_commands import hardcoded_commands
 from init import joinRoom
 from message_sending_service import sendingService
-from hardcoded_commands import hardcoded_commands
 from read import getUser, getMessage, getChannel, getMod, getUserWhisper, getMessageWhisper, getUserID
-from settings import OWNER
-from socket import openSocket
 from regular_commands import regular_commands, addcom, delcom
+from settings import OWNER, HOST, PORT, PASS, IDENT
 
 
 class SocketHelper:
@@ -28,6 +28,29 @@ class SocketHelper:
 
     def get_socket(self):
         return self.socket
+
+    def open_socket(self):
+        try:
+            s = socket.socket()
+            s.connect((HOST, PORT))
+            s.send("PASS " + PASS + "\r\n")
+            s.send("NICK " + IDENT + "\r\n")
+
+            with open('joins.txt', 'a+') as jf:
+                joins = jf.readlines()
+
+            for chan in joins:
+                s.send("JOIN #" + str(chan.strip()) + "\r\n")
+                print "joined " + chan.strip()
+                sleep(0.50)
+
+            s.send("CAP REQ :twitch.tv/commands\r\n")
+
+            self.socket = s
+
+        except Exception, e:
+            print "Opensocket error ", e
+
 
 socketHelper = SocketHelper()
 
@@ -96,19 +119,19 @@ def parse_info(args):
             return userid, user, message, chan, True
 
 
-def message_actions(messageQueue):
+def message_actions(message_queue):
     s = socketHelper.get_socket()
     Thread(target=message_limit_handler).start()
     kuismafix = ["strongkuisma", "harshmouse", "teukka"]
     while True:
-        (userid, user, message, chan, modstatus, dik) = messageQueue.get()
+        (userid, user, message, chan, modstatus, dik) = message_queue.get()
         Thread(target=regular_commands, args=(s, dik, modstatus, chan, user, message,)).start()
         Thread(target=hardcoded_commands, args=(s, chan, user, modstatus, message,)).start()
 
         if "has won the giveaway" in message and user == "nightbot":
             try:
                 search, b = message.split(" ", 1)
-                sendingService.send_msg(s, chan, getFollowStatus(search, chan))
+                sendingService.send_msg(s, chan, get_follow_status(search, chan))
             except Exception, e:
                 print "nightbot giveaway detection error:", e
 
@@ -224,7 +247,7 @@ if __name__ == '__main__':
                 socketHelper.get_socket().close()
         except:
             pass
-        socketHelper.set_socket(openSocket())
+        socketHelper.open_socket()
         try:
             print "Starting..."
             main_loop()
