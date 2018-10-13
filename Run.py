@@ -1,58 +1,77 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import os
-import sys
-import string
 import json
-from multiprocessing import Pool, Queue, Process
+import os
+import string
+import sys
+from multiprocessing import Pool, Queue
 from threading import Thread
 from time import sleep
-from MessageSendingService import sendingService
-from Read import getUser, getMessage, getChannel, getMod, getUserWhisper, getMessageWhisper
-from Socket import openSocket
+
+from Api import getFollowStatus
 from Init import joinRoom
-from Settings import OWNER
-from Messagecommands import tryCommands
-from Api import *
-from handleMsg import handleMsg, addcom, delcom
+from message_sending_service import sendingService
+from hardcoded_commands import hardcoded_commands
+from Read import getUser, getMessage, getChannel, getMod, getUserWhisper, getMessageWhisper, getUserID
+from settings import OWNER
+from Socket import openSocket
+from regular_commands import regular_commands, addcom, delcom
 
 
 class SocketHelper:
     def __init__(self):
         self.socket = None
-    def setSocket(self, s):
+
+    def set_socket(self, s):
         self.socket = s
-    def getSocket(self):
+
+    def get_socket(self):
         return self.socket
 
 socketHelper = SocketHelper()
 
 
-def refreshCmds():
-    with open("joins.txt", 'a+') as joinsfile:
-        joins = joinsfile.readlines()
+class CommandHelper():
+    def __init__(self):
+        self.dik = self.refresh_dik()
 
-    dik = {}
+    def set_dik(self, dik):
+        self.dik = dik
 
-    for i in range(len(joins)):
-        dik.update({joins[i].strip() : ""})
-        filepath = joins[i].strip()+"commands"
+    def get_dik(self):
+        return self.dik
 
-        if os.path.isfile(filepath) and os.path.getsize(filepath) > 0:
-            dik2 = {  joins[i].strip() : json.load( open( filepath, "a+" ) )  }
-        else:
-            defaultdik = { "!defaultcmd" : "defaultaction" }
-            json.dump( defaultdik, open(filepath, "a+") )
-            dik2 = {joins[i].strip() : json.load(open(filepath, "a+") )}
+    def renew_dik(self):
+        self.dik = self.refresh_dik()
 
-        dik.update(dik2)
+    @staticmethod
+    def refresh_dik():
+        with open("joins.txt", 'a+') as joinsfile:
+            joins = joinsfile.readlines()
 
-    return dik
+        cmddict = {}
+
+        for i in range(len(joins)):
+            cmddict.update({joins[i].strip() : ""})
+            filepath = joins[i].strip()+"commands"
+
+            if os.path.isfile(filepath) and os.path.getsize(filepath) > 0:
+                cmddict2 = {  joins[i].strip() : json.load( open( filepath, "a+" ) )  }
+            else:
+                defaultdik = { "!defaultcmd" : "defaultaction" }
+                json.dump( defaultdik, open(filepath, "a+") )
+                cmddict2 = {joins[i].strip() : json.load(open(filepath, "a+") )}
+
+            cmddict.update(cmddict2)
+
+        return cmddict
+        
+cmds = CommandHelper()
 
 
-def parseInfo(args):
-    s = socketHelper.getSocket()
+def parse_info(args):
+    s = socketHelper.get_socket()
     #print s
     msg = args
     if "PING" in msg:
@@ -64,30 +83,32 @@ def parseInfo(args):
             message = getMessage(msg).strip()
             chan = getChannel(msg).strip().lower()
             modstatus = getMod(msg)
+            userid = getUserID(msg)
             if user == OWNER:
                 modstatus = True
-            return user, message, chan, modstatus
+            return userid, user, message, chan, modstatus
 
         if "WHISPER" in msg:
             user = getUserWhisper(msg).strip().lower()
             message = getMessageWhisper(msg).strip()
             chan = "jtv," + user
-            return user, message, chan, True
+            userid = getUserID(msg)
+            return userid, user, message, chan, True
 
 
-def messageActions(messageQueue):
-    s = socketHelper.getSocket()
-    Thread(target=messageLimitHandler).start()
+def message_actions(messageQueue):
+    s = socketHelper.get_socket()
+    Thread(target=message_limit_handler).start()
     kuismafix = ["strongkuisma", "harshmouse", "teukka"]
     while True:
-        (user, message, chan, modstatus, dik) = messageQueue.get()
-        Thread(target=handleMsg, args=(s, dik, modstatus, chan, user, message,)).start()
-        Thread(target=tryCommands, args=(s, chan, user, modstatus, message,)).start()
+        (userid, user, message, chan, modstatus, dik) = messageQueue.get()
+        Thread(target=regular_commands, args=(s, dik, modstatus, chan, user, message,)).start()
+        Thread(target=hardcoded_commands, args=(s, chan, user, modstatus, message,)).start()
 
         if "has won the giveaway" in message and user == "nightbot":
             try:
                 search, b = message.split(" ", 1)
-                sendingService.sendChanMsg(s, chan, getFollowStatus(search, chan))
+                sendingService.send_msg(s, chan, getFollowStatus(search, chan))
             except Exception, e:
                 print "nightbot giveaway detection error:", e
 
@@ -95,62 +116,80 @@ def messageActions(messageQueue):
             try:
                 if chan not in kuismafix:
                     kuismafix.append(chan)
-                    sendingService.sendChanMsg(s, chan, "Channel has been kuismafixed")
+                    sendingService.send_msg(s, chan, "Channel has been kuismafixed")
                 elif chan in kuismafix:
                     kuismafix.remove(chan)
-                    sendingService.sendChanMsg(s, chan, "Kuismafix has been lifted")
+                    sendingService.send_msg(s, chan, "Kuismafix has been lifted")
             except Exception, e:
                 print "kuismafix error:", e
 
-        if message.startswith("!addcom ") and modstatus:
+        if message.startswith("!addcom ") or message.startswith("lisääkomento "):
             try:
-                if chan in kuismafix and (user != OWNER):
-                    print "addcom skipped"
-                else:
-                    addcom(s, dik, chan, user, message)
+                if modstatus:
+                    if message.startswith("!addcom "):
+                        splittext = "!addcom "
+                    if message.startswith("lisääkomento"):
+                        splittext = "lisääkomento "
+                    if chan in kuismafix and user != OWNER and splittext == "!addcom ":
+                        print "addcom skipped"
+                    else:
+                        addcom(s, dik, chan, user, message, splittext)
+                        cmds.renew_dik()
             except Exception, e:
                 print "error at !addcom ", e
 
-        if message.startswith("!delcom ") and modstatus:
+        if message.startswith("!delcom ") or message.startswith("poistakomento "):
             try:
-                if chan in kuismafix and user != OWNER:
-                    print "delcom skipped"
-                else:
-                    delcom(s, dik, chan, user, message)
+                if modstatus:
+                    if message.startswith("poistakomento"):
+                        splittext = "poistakomento "
+                    if message.startswith("!delcom "):
+                        splittext = "!delcom "
+                    if chan in kuismafix and user != OWNER and splittext == "!delcom ":
+                        print "delcom skipped"
+                    else:
+                        delcom(s, dik, chan, user, message, splittext)
+                        cmds.renew_dik()
             except Exception, e:
                 print "error at !delcom ", e
 
-        if message.startswith("!editcom ") and modstatus:
+        if message.startswith("!editcom ") or message.startswith("muutakomento "):
             try:
-                if chan in kuismafix and (user != OWNER):
-                    print "editcom skipped"
-                else:
-                    todel = message.split(" ", 2)
-                    delcom(s, dik, chan, user, ("!delcom " + todel[1]))
-                    addcom(s, dik, chan, user, message.replace("!editcom", "!addcom", 1))
+                if modstatus:
+                    if message.startswith("muutakomento"):
+                        splittext = "muutakomento "
+                    if message.startswith("!editcom "):
+                        splittext = "!editcom "
+                    if chan in kuismafix and user != OWNER and splittext == "!editcom ":
+                        print "editcom skipped"
+                    else:
+                        todel = message.split(" ", 2)
+                        delcom(s, dik, chan, user, ("!delcom " + todel[1]), "!delcom ")
+                        addcom(s, dik, chan, user, message.replace(splittext, "!addcom ", 1), "!addcom ")
+                        cmds.renew_dik()
             except Exception, e:
                 print "error @!editcom ", e
 
 
-def messageLimitHandler():
+def message_limit_handler():
     while 1:
-        sendingService.addMessagesLeft(1)
+        sendingService.add_messages_left(1)
         sleep(1.5)
 
 
-def mainLoop():
-    s = socketHelper.getSocket()
-    incomingPool = Pool(1)
+def main_loop():
+    s = socketHelper.get_socket()
+    incoming_pool = Pool(1)
     joinRoom(s)
     s.send("CAP REQ :twitch.tv/tags\n")
-    dik = refreshCmds()
     reload(sys)
     sys.setdefaultencoding("utf-8")
-    sendingService.sendChanMsg(s, OWNER, "started")
-    msgQ = Queue()
+    sendingService.send_msg(s, OWNER, "started")
+    msg_q = Queue()
 
-    Process(target=messageActions, args=(msgQ,)).start()
-
+    th = Thread(target=message_actions, args=(msg_q,))
+    th.daemon = True
+    th.start()
     # Start looping
     while 1:
         temp = ""
@@ -165,31 +204,30 @@ def mainLoop():
         except Exception, e:
             print "socket recv? error: ", e
             break
-        sendingService.messagesLeft -= 1
         templines = list()
         for i in xrange(len(temp)):
             pack = (temp[i])
             templines.append(pack)
-
-        msgArr = incomingPool.map(parseInfo, templines)
-        for resp in msgArr:
+        
+        msg_arr = incoming_pool.map(parse_info, templines)
+        for resp in msg_arr:
             if resp != None:
-                respList = list(resp)
-                respList.append(dik)
-                msgQ.put(respList)
+                resp_list = list(resp)
+                resp_list.append(cmds.get_dik())
+                msg_q.put(resp_list)
 
 
 if __name__ == '__main__':
     while 1:
         try:
-            if socketHelper.getSocket() != None:
-                socketHelper.getSocket().close()
+            if socketHelper.get_socket() is not None:
+                socketHelper.get_socket().close()
         except:
             pass
-        socketHelper.setSocket(openSocket())
+        socketHelper.set_socket(openSocket())
         try:
             print "Starting..."
-            mainLoop()
+            main_loop()
         except Exception, e:
             print "highest level program error: ", e
             pass
