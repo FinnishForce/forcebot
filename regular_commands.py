@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 from Api import getUptime
 from random import randint
-from MessageSendingService import sendingService
+from message_sending_service import sendingService
 import json
 
 
-def handleMsg(s, dik, modstatus, chan, user, message):
+def regular_commands(s, dik, modstatus, chan, user, message):
     try:
         output, own = message.split(' ', 1)
         own = own.strip()
@@ -44,21 +44,21 @@ def handleMsg(s, dik, modstatus, chan, user, message):
                 output = output.replace('$own$', own)
 
             if not modonlycmd:
-                sendingService.sendChanMsg(s, chan, output)
+                sendingService.send_msg(s, chan, output)
             elif modonlycmd:
                 if modstatus and output != "":
-                    sendingService.sendChanMsg(s, chan, output)
+                    sendingService.send_msg(s, chan, output)
     except Exception, e:
         pass
 
 
-def delcom(s, dik, chan, user, message):
+def delcom(s, dik, chan, user, message, splittext):
     try:
         if chan.startswith("jtv"):
             cmds = dik["jtv"]
         else:
             cmds = dik[chan]
-        a, b = message.split('!delcom ', 1)
+        a, b = message.split(splittext, 1)
 
         poistettava = b.strip().lower().decode('utf8')
 
@@ -72,18 +72,18 @@ def delcom(s, dik, chan, user, message):
             else:
                 json.dump(cmds, open(chan.strip() + "commands", 'wb'), sort_keys=True, indent=3)
             chan = "jtv," + user
-            sendingService.sendChanMsg(s, chan, resp)
+            sendingService.send_msg(s, chan, resp)
     except Exception, e:
         print "delcom error:", e
 
 
-def addcom(s, dik, chan, user, message):
+def addcom(s, dik, chan, user, message, splittext):
     try:
         if chan.startswith("jtv"):
             cmds = dik["jtv"]
         else:
             cmds = dik[chan]
-        a, b = message.split('!addcom ', 1)
+        a, b = message.split(splittext, 1)
         c, d = b.split(' ', 1)
 
         cmd = c.decode('utf8')
@@ -105,10 +105,10 @@ def addcom(s, dik, chan, user, message):
                 json.dump(cmds, open(chan.strip() + "commands", 'wb'), sort_keys=True, indent=3)
             resp = "[ADDED]: " + cmd + " : " + action
             chan = "jtv," + user
-            sendingService.sendChanMsg(s, chan, resp)
+            sendingService.send_msg(s, chan, resp)
         else:
             resp = cmd + " : " + cmdDoesExist + " already exists, please !delcom it first"
             chan = "jtv," + user
-            sendingService.sendChanMsg(s, chan, resp)
+            sendingService.send_msg(s, chan, resp)
     except Exception, e:
         print "addcom error:", e
