@@ -12,7 +12,7 @@ from command_helper import cmds
 from hardcoded_commands import hardcoded_commands
 from init import joinRoom
 from message_sending_service import sendingService
-from read import get_user, get_message, get_channel, get_mod, get_user_whisper, get_message_whisper, get_user_id
+from read import get_user, get_message, get_channel, get_mod, get_user_id
 from regular_commands import regular_commands, addcom, delcom
 from settings import OWNER
 from socket_helper import socketHelper
