@@ -7,7 +7,15 @@ def getUser(line):
     except Exception, e:
         print "Getuser error ->", e
 
-
+def getUserID(line):
+    try:
+        separate = line.split(";")
+        for snip in separate:
+            if snip.startswith("user-id="):
+                return snip.split("=")[1]
+        return 0
+    except Exception, e:
+        print "getuserid error ->", e
 def getUserWhisper(line):
     try:
         separate = line.split(".tmi.twitch.tv WHISPER ")
