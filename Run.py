@@ -75,7 +75,7 @@ def message_actions(message_queue):
                         print "addcom skipped"
                     else:
                         addcom(s, dik, chan, user, message, splittext)
-                        cmds.renew_dik()
+                        cmds.renew()
             except Exception, e:
                 print "error at !addcom ", e
 
@@ -90,7 +90,7 @@ def message_actions(message_queue):
                         print "delcom skipped"
                     else:
                         delcom(s, dik, chan, user, message, splittext)
-                        cmds.renew_dik()
+                        cmds.renew()
             except Exception, e:
                 print "error at !delcom ", e
 
@@ -107,7 +107,7 @@ def message_actions(message_queue):
                         todel = message.split(" ", 2)
                         delcom(s, dik, chan, user, ("!delcom " + todel[1]), "!delcom ")
                         addcom(s, dik, chan, user, message.replace(splittext, "!addcom ", 1), "!addcom ")
-                        cmds.renew_dik()
+                        cmds.renew()
             except Exception, e:
                 print "error @!editcom ", e
 
@@ -154,7 +154,7 @@ def main_loop():
         for resp in msg_arr:
             if resp != None:
                 resp_list = list(resp)
-                resp_list.append(cmds.get_dik())
+                resp_list.append(cmds.get())
                 msg_q.put(resp_list)
 
 

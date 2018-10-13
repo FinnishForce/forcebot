@@ -4,19 +4,19 @@ import json
 
 class CommandHelper(object):
     def __init__(self):
-        self.dik = self.refresh_dik()
+        self.cmd_dict = self.refresh()
 
-    def set_dik(self, dik):
-        self.dik = dik
+    def set(self, dik):
+        self.cmd_dict = dik
 
-    def get_dik(self):
-        return self.dik
+    def get(self):
+        return self.cmd_dict
 
-    def renew_dik(self):
-        self.dik = self.refresh_dik()
+    def renew(self):
+        self.cmd_dict = self.refresh()
 
     @staticmethod
-    def refresh_dik():
+    def refresh():
         with open("joins.txt", 'a+') as joinsfile:
             joins = joinsfile.readlines()
 
