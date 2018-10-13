@@ -1,6 +1,6 @@
 import socket
 from time import sleep
-from Settings import *
+from settings import *
 
 
 def openSocket():
