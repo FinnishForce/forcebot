@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import json
-import os
-import socket
 import string
 import sys
 from multiprocessing import Pool, Queue
@@ -11,86 +8,14 @@ from threading import Thread
 from time import sleep
 
 from api import get_follow_status
+from command_helper import cmds
 from hardcoded_commands import hardcoded_commands
 from init import joinRoom
 from message_sending_service import sendingService
 from read import getUser, getMessage, getChannel, getMod, getUserWhisper, getMessageWhisper, getUserID
 from regular_commands import regular_commands, addcom, delcom
-from settings import OWNER, HOST, PORT, PASS, IDENT
-
-
-class SocketHelper:
-    def __init__(self):
-        self.socket = None
-
-    def set_socket(self, s):
-        self.socket = s
-
-    def get_socket(self):
-        return self.socket
-
-    def open_socket(self):
-        try:
-            s = socket.socket()
-            s.connect((HOST, PORT))
-            s.send("PASS " + PASS + "\r\n")
-            s.send("NICK " + IDENT + "\r\n")
-
-            with open('joins.txt', 'a+') as jf:
-                joins = jf.readlines()
-
-            for chan in joins:
-                s.send("JOIN #" + str(chan.strip()) + "\r\n")
-                print "joined " + chan.strip()
-                sleep(0.50)
-
-            s.send("CAP REQ :twitch.tv/commands\r\n")
-
-            self.socket = s
-
-        except Exception, e:
-            print "Opensocket error ", e
-
-
-socketHelper = SocketHelper()
-
-
-class CommandHelper():
-    def __init__(self):
-        self.dik = self.refresh_dik()
-
-    def set_dik(self, dik):
-        self.dik = dik
-
-    def get_dik(self):
-        return self.dik
-
-    def renew_dik(self):
-        self.dik = self.refresh_dik()
-
-    @staticmethod
-    def refresh_dik():
-        with open("joins.txt", 'a+') as joinsfile:
-            joins = joinsfile.readlines()
-
-        cmddict = {}
-
-        for i in range(len(joins)):
-            cmddict.update({joins[i].strip() : ""})
-            filepath = joins[i].strip()+"commands"
-
-            if os.path.isfile(filepath) and os.path.getsize(filepath) > 0:
-                cmddict2 = {  joins[i].strip() : json.load( open( filepath, "a+" ) )  }
-            else:
-                defaultdik = { "!defaultcmd" : "defaultaction" }
-                json.dump( defaultdik, open(filepath, "a+") )
-                cmddict2 = {joins[i].strip() : json.load(open(filepath, "a+") )}
-
-            cmddict.update(cmddict2)
-
-        return cmddict
-        
-cmds = CommandHelper()
+from settings import OWNER
+from socket_helper import socketHelper
 
 
 def parse_info(args):
