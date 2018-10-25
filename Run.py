@@ -18,6 +18,22 @@ from settings import OWNER
 from socket_helper import socketHelper
 
 
+class Cooldown(object):
+    def __init__(self):
+        self.list = []
+        self.blocktime = 1
+
+    def add(self, cmd):
+        self.list.append(cmd)
+
+    def pop(self):
+        try:
+            self.list.pop()
+        except IndexError:
+            pass
+
+cooldown = Cooldown()
+
 def parse_info(args):
     s = socketHelper.get_socket()
     #print s
@@ -36,19 +52,39 @@ def parse_info(args):
         return userid, user, message, chan, modstatus
 
 
+def cooldown_list_popper():
+    while True:
+        cooldown.pop()
+        sleep(cooldown.blocktime)
+
 
 def message_actions(message_queue):
     s = socketHelper.get_socket()
+    Thread(target=cooldown_list_popper).start()
     Thread(target=message_limit_handler).start()
     kuismafix = ["strongkuisma", "harshmouse", "teukka"]
+    skip_command = False
     while True:
         (userid, user, message, chan, modstatus, dik) = message_queue.get()
-        Thread(target=regular_commands, args=(s, dik, modstatus, chan, user, message,)).start()
-        Thread(target=hardcoded_commands, args=(s, chan, user, modstatus, message,)).start()
+
+        if message.startswith("!"):
+            try:
+                command = message.split(" ", 1)[0]
+                if command in cooldown.list:
+                    skip_command = True
+                else:
+                    skip_command = False
+                    cooldown.add(command)
+            except Exception, e:
+                print "cooldownlist add error:", e
+
+        if not skip_command:
+            Thread(target=regular_commands, args=(s, dik, modstatus, chan, user, message,)).start()
+            Thread(target=hardcoded_commands, args=(s, chan, user, modstatus, message,)).start()
 
         if "has won the giveaway" in message and user == "nightbot":
             try:
-                search, b = message.split(" ", 1)
+                search = message.split(" ", 1)[0]
                 sendingService.send_msg(s, chan, get_follow_status(search, chan))
             except Exception, e:
                 print "nightbot giveaway detection error:", e
