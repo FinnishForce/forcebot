@@ -165,7 +165,7 @@ def hardcoded_commands(s, chan, user, modstatus, message):
 
     if message.startswith('!randomgame'):
         try:
-            providers = ["netent", "microgaming", "novo", "merkur", "btg", "gamomat", "quickspin"]
+            providers = ["netent", "microgaming", "novo", "merkur", "btg", "gamomat", "quickspin", "playngo"]
             try:
                 provider = message.split(" ", 1)[1]
             except IndexError:
@@ -178,7 +178,7 @@ def hardcoded_commands(s, chan, user, modstatus, message):
     if message.startswith("!randomprovider"):
         try:
             providers = ["btg", "gamomat", "merkur", "microgaming", "netent", "netent",
-                         "novo", "novomatic", "quickspin", "quickspin"]
+                         "novo", "novomatic", "quickspin", "quickspin", "playngo"]
             sendingService.send_msg(s, chan, random.choice(providers))
         except Exception, e:
             print "randomprovider error", e
