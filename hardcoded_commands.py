@@ -12,7 +12,7 @@ from message_sending_service import sendingService
 from settings import IDENT, OWNER
 from omawikipedia import wikipedia_haku
 from osrs_ge import get_price
-
+from gamelists.actions import get_game_by_provider
 
 def refresh_store():
     with open("joins.txt", 'a+') as joinsfile:
@@ -165,12 +165,23 @@ def hardcoded_commands(s, chan, user, modstatus, message):
 
     if message.startswith('!randomgame'):
         try:
-            with open('gamelist.txt', 'a+') as f:
-                pelilista = json.load(f)
-            sendingService.send_msg(s, chan, random.choice(pelilista))
+            providers = ["netent", "microgaming", "novomatic", "merkur", "btg", "gamomat", "quickspin"]
+            try:
+                provider = message.split(" ", 1)[1]
+            except IndexError:
+                provider = "all"
+            if provider.lower() in providers + ["all"]:
+                sendingService.send_msg(s, chan, get_game_by_provider(provider))
         except Exception, e:
             print "randomgame error", e
 
+    if message.startswith("!randomprovider"):
+        try:
+            providers = ["btg", "gamomat", "merkur", "microgaming", "netent", "netent",
+                         "novomatic", "novomatic", "quickspin", "quickspin"]
+            sendingService.send_msg(s, chan, random.choice(providers))
+        except Exception, e:
+            print "randomprovider error", e
     if message.startswith('!täytteet'):
         try:
             tayteamount = random.randint(2, 5)
