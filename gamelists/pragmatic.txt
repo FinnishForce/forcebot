@@ -1,0 +1,13 @@
+["Da Vinci's Treasure",
+"Gold Rush",
+"Dragon Kingdom",
+"Dwarven Gold Deluxe",
+"Great Rhino",
+"Journey to the West",
+"Lady Godiva",
+"Madame Destiny",
+"Peking Luck",
+"Wolf Gold",
+"Vegas Magic",
+"Triple Tigers",
+"Queen of Atlantis"]
