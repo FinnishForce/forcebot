@@ -1,4 +1,4 @@
-# forcebotti
+# forcebot
 Python chat bot for Twitch
 
 The bot is designed to run on Raspberry Pi so you may encounter Pi specific things.
