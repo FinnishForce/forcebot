@@ -18,21 +18,21 @@ from settings import OWNER
 from socket_helper import socketHelper
 
 
-class Cooldown(object):
-    def __init__(self):
-        self.list = []
-        self.blocktime = 1
-
-    def add(self, cmd):
-        self.list.append(cmd)
-
-    def pop(self):
-        try:
-            self.list.pop()
-        except IndexError:
-            pass
-
-cooldown = Cooldown()
+# class Cooldown(object):
+#     def __init__(self):
+#         self.list = []
+#         self.blocktime = 1
+#
+#     def add(self, cmd):
+#         self.list.append(cmd)
+#
+#     def pop(self):
+#         try:
+#             self.list.pop()
+#         except IndexError:
+#             pass
+#
+# cooldown = Cooldown()
 
 def parse_info(args):
     s = socketHelper.get_socket()
@@ -52,15 +52,15 @@ def parse_info(args):
         return userid, user, message, chan, modstatus
 
 
-def cooldown_list_popper():
-    while True:
-        cooldown.pop()
-        sleep(cooldown.blocktime)
+# def cooldown_list_popper():
+#     while True:
+#         cooldown.pop()
+#         sleep(cooldown.blocktime)
 
 
 def message_actions(message_queue):
     s = socketHelper.get_socket()
-    Thread(target=cooldown_list_popper).start()
+    # Thread(target=cooldown_list_popper).start()
     Thread(target=message_limit_handler).start()
     kuismafix = ["strongkuisma", "harshmouse", "teukka"]
     skip_command = False
@@ -70,11 +70,11 @@ def message_actions(message_queue):
         if message.startswith("!"):
             try:
                 command = message.split(" ", 1)[0]
-                if command in cooldown.list:
-                    skip_command = True
-                else:
-                    skip_command = False
-                    cooldown.add(command)
+                # if command in cooldown.list:
+                #     skip_command = True
+                # else:
+                #     skip_command = False
+                #     cooldown.add(command)
             except Exception, e:
                 print "cooldownlist add error:", e
 
