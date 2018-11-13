@@ -7,7 +7,7 @@ import os
 import random
 from time import sleep
 
-from api import get_drink, get_drink_mix, get_title, get_wikia_url, get_follow_status, get_steam_stats, get_steam_bans, convert_to_steam64, get_viewers
+from api import get_drink, get_drink_mix, get_title, get_wikia_url, get_follow_status, get_steam_stats, get_steam_bans, convert_to_steam64, get_viewers, get_osrs_wiki
 from message_sending_service import sendingService
 from settings import IDENT, OWNER
 from omawikipedia import wikipedia_haku
@@ -165,7 +165,7 @@ def hardcoded_commands(s, chan, user, modstatus, message):
 
     if message.startswith('!randomgame'):
         try:
-            providers = ["netent", "microgaming", "novo", "merkur", "btg", "gamomat", "quickspin", "playngo", "pragmatic", "pushgaming", "thunderkick"]
+            providers = ["netent", "microgaming", "novo", "merkur", "btg", "gamomat", "quickspin", "playngo", "pragmatic", "pushgaming", "thunderkick", "blueprint"]
             try:
                 provider = message.split(" ", 1)[1]
             except IndexError:
@@ -177,7 +177,7 @@ def hardcoded_commands(s, chan, user, modstatus, message):
 
     if message.startswith("!randomprovider"):
         try:
-            providers = ["btg", "gamomat", "merkur", "microgaming", "netent", "netent", "pragmatic",
+            providers = ["btg", "gamomat", "merkur", "microgaming", "netent", "netent", "pragmatic", "blueprint",
                          "novo", "novomatic", "quickspin", "quickspin", "playngo", "pushgaming", "thunderkick"]
             sendingService.send_msg(s, chan, random.choice(providers))
         except Exception, e:
@@ -274,7 +274,7 @@ def hardcoded_commands(s, chan, user, modstatus, message):
     if message.startswith("!rswiki "):
         try:
             a, title = message.split("!rswiki ")
-            resp = get_wikia_url("rswiki", title)
+            resp = get_osrs_wiki(title)
             sendingService.send_msg(s, chan, resp)
 
         except Exception, e:

@@ -2,3 +2,9 @@
 /my_pid
 /.venv
 /Settings.py
+*commands
+*store
+.idea
+/testikoto.py
+/winner.txt
+/joins.txt

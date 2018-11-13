@@ -1,0 +1,11 @@
+["Buffalo Rising",
+"Napoleon",
+"Diamond Mine", 
+"Irish Riches",
+"Ted",
+"Genie Jackpots",
+"El Jackpotto",
+"King Kong Cash",
+"Spinal Tap",
+"Wild Antics",
+"Wish Upon a Jackpot"]

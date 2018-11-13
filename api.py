@@ -6,9 +6,10 @@ from datetime import datetime, timedelta
 from random import randint
 from time import sleep, mktime, strptime
 from time import time as currenttime
-
+import requests
 import wikia
 import wikipedia
+from bs4 import BeautifulSoup
 from dateutil import relativedelta as rd
 
 from settings import *
@@ -240,6 +241,20 @@ def get_wikia_url(site, title):
     except:
         print "api wikiaurl error"
 
+def get_osrs_wiki(title):
+    try:
+        payload = {"search": title}
+        url = "https://oldschool.runescape.wiki"
+        r = requests.post(url, data=payload)
+
+        soup = BeautifulSoup(r.text, "html.parser")
+
+        url = soup.find(rel="canonical")
+        url = url.get("href")
+        return url
+    except Exception, e:
+        print "get_osrs_wiki error-->", e
+
 
 def get_any_wikia_url(site, title):
     try:
@@ -327,7 +342,7 @@ def get_following(user, chan):
             return "0"
             # timediff = currenttime()-mktime(strptime(dateFollowed, "%Y-%m-%dT%H:%M:%SZ"))
             # delta = timedelta(seconds=timediff-7200)
-        dif = rd.relativedelta(datetime.fromtimestamp(currenttime() - 10800),
+        dif = rd.relativedelta(datetime.fromtimestamp(currenttime() - 7200), #10800 summer 7200 winter time
                                datetime.fromtimestamp(mktime(strptime(dateFollowed, "%Y-%m-%dT%H:%M:%SZ"))))
         if dif.years != 0:
             return "{0} years, {1} months, {2} days, {3} hrs".format(dif.years, dif.months, dif.days, dif.hours)
