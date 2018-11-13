@@ -372,7 +372,7 @@ def hardcoded_commands(s, chan, user, modstatus, message):
 
     if command == "!pyramid" and (user == OWNER or user == chan):
         try:
-            pyramid_str = parameters_joined
+            pyramid_str = parameters_joined + " "
             sendingService.send_msg(s, chan, pyramid_str)
             sendingService.send_msg(s, chan, 2*pyramid_str)
             sendingService.send_msg(s, chan, 3*pyramid_str)
