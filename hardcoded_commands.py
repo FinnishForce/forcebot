@@ -94,6 +94,12 @@ def hardcoded_commands(s, chan, user, modstatus, message):
                   "ylikypsä porsaanliha (pulled pork)",
                   "hiirenliha", "siika", "mursunliha", "mousen patenttijuusto", "paprika",
                   "euron kolikoita", "toukka", "suolaa", "auringonkukansiemeniä", "3x tomaatti", "3/4 osa kupopallollinen jalapenoa"]
+
+    legit_tayte = ["jauheliha", "kananmuna", "kebab", "kinkku", "pekoni", "kana", "pepperoni", "salami", "poro",
+                   "ananas", "herkkusieni", "jalapeno", "tomaatti", "oliivi", "paprika", "punasipuli",
+                   "sipuli", "aurajuusto", "tuplajuusto", "fetajuusto", "mozzarella", "katkarapu", "tonnikala",
+                   "valkosipuli", "persikka", "simpukka"]
+
     random.shuffle(taytelista)
     '''
     try:
@@ -126,25 +132,25 @@ def hardcoded_commands(s, chan, user, modstatus, message):
     '''
     if command == '!kysy':
         try:
-            r=0
+            remove_generic = False
             if "pelataan" in message:
                 qlist.append("Ei pelata")
                 qlist.append("Pelataan")
-                r=1
+                remove_generic = True
             if "kokeillaan" in message:
                 qlist.append("Ei kokeilla")
                 qlist.append("Kokeillaan")
-                r=1
+                remove_generic = True
             if "mennään" in message:
                 qlist.append("Ei mennä")
                 qlist.append("Mennään")
-                r=1
+                remove_generic = True
             if "onko" in message and "homo" in message:
                 qlist.append("Taidat itse olla homo")
             if "tulee" in message and not "paljo" in message:
                 qlist.append("Ei tule")
                 qlist.append("Tulee tulee")
-                r=1
+                remove_generic = True
             if "joko" in message:
                 qlist.append("Ei vielä")
                 qlist.append("Wait and see")
@@ -153,10 +159,11 @@ def hardcoded_commands(s, chan, user, modstatus, message):
             if "onko" in message:
                 qlist.append("On")
                 qlist.append("Ei ole")
-                r=1
+                remove_generic = True
             if "miksi" in message:
                 qlist.append("Katso striimiä niin ehkä ymmärrät miksi")
                 qlist.append("Lue khattia vähän tarkemmin niin tajuat")
+                remove_generic = True
             if "mistä" in message:
                 qlist.append("Varmaan Turusta")
             if chan in message:
@@ -168,11 +175,9 @@ def hardcoded_commands(s, chan, user, modstatus, message):
             if "huono" in message:
                 qlist.append("On huono")
                 qlist.append("Ei ole huono")
-            if r==1:
+            if remove_generic is True:
                 qlist.remove("Kyllä")
                 qlist.remove("Ei")
-            random.shuffle(qlist)
-            random.shuffle(qlist)
             random.shuffle(qlist)
             sendingService.send_msg(s, chan, random.choice(qlist))
         except Exception, e:
@@ -211,11 +216,24 @@ def hardcoded_commands(s, chan, user, modstatus, message):
             print "täytteet error"
             print e
 
+    if command == '!täytteet2':
+        try:
+            tayteamount = random.randint(2, 5)
+            tayte = []
+            for x in range(tayteamount):
+                tayte.append(random.choice(legit_tayte))
+                legit_tayte.remove(tayte[x])
+            taytteet = ', '.join(tayte)
+            sendingService.send_msg(s, chan, taytteet)
+        except Exception, e:
+            print "täytteet error"
+            print e
+
     if command == '!juoma':
         try:
-            nimi, hinta, tyyppi, tuotenumero = get_drink()
-            resp = nimi + " (" + tyyppi + ") (" + str(hinta) + "€)"# https://www.alko.fi/tuotteet/" + str(
-                #tuotenumero) + "/"
+            name, price, type, prod_num = get_drink()
+            resp = name + " (" + type + ") (" + str(price) + "€)"# https://www.alko.fi/tuotteet/" + str(
+                #prod_num) + "/"
             sendingService.send_msg(s, chan, resp)
         except Exception, e:
             print "!juoma error", e
@@ -364,8 +382,6 @@ def hardcoded_commands(s, chan, user, modstatus, message):
             if a > b:
                 a, b = b, a
 
-            r = random.randint(a, b)
-            resp = "You got " + str(r) + " (" + str(a) + "-" + str(b) + ")"
             sendingService.send_msg(s, chan, resp)
         except:
             print "rng error"
