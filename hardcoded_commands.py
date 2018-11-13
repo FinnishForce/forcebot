@@ -382,6 +382,8 @@ def hardcoded_commands(s, chan, user, modstatus, message):
             if a > b:
                 a, b = b, a
 
+            rand = random.randint(a, b)
+            resp = "You got " + str(rand) + " (" + str(a) + "-" + str(b) + ")"
             sendingService.send_msg(s, chan, resp)
         except:
             print "rng error"
