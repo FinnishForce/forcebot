@@ -36,15 +36,29 @@ def refresh_store():
     return store
 
 
+def find_command(message):
+    msg_arr = message.split(" ")
+    command = msg_arr[0]
+    parameters = msg_arr[1:]
+    return command, parameters
+
+
+def join_param(parameters):
+    return " ".join(parameters)
+
+
 def hardcoded_commands(s, chan, user, modstatus, message):
+
+    command, parameters = find_command(message)
+    parameters_joined = join_param(parameters)
 
     #store = refreshStore()
     #if (chan.startswith("jtv")):
     #    store = store["jtv"]
     #else:
     #    store = store[chan]
-    qlist = ["Voit luottaa siihen", "Vain juontaja tietää sen",
-             "Kyllä", "Ei", "En halua kertoa",
+    qlist = ["Voit luottaa siihen", "Vain juontaja tietää sen", "Virhe tapahtui: kysymys liian hankala",
+             "Kyllä", "Ei", "En halua kertoa", "Yhtä varmasti kuin Fire Joker on juontajan lempipeli",
              "Negative", "Tuohon on pakko sanoa ei", "Parempi kun jätän vastaamatta"]
 
     taytelista = ["ananas", "anjovis", "aurajuusto", "sudenliha", "banaani", "basilika",
@@ -110,7 +124,7 @@ def hardcoded_commands(s, chan, user, modstatus, message):
             print "error !howmany:", e
 
     '''
-    if message.startswith('!kysy'):
+    if command == '!kysy':
         try:
             r=0
             if "pelataan" in message:
@@ -142,6 +156,7 @@ def hardcoded_commands(s, chan, user, modstatus, message):
                 r=1
             if "miksi" in message:
                 qlist.append("Katso striimiä niin ehkä ymmärrät miksi")
+                qlist.append("Lue khattia vähän tarkemmin niin tajuat")
             if "mistä" in message:
                 qlist.append("Varmaan Turusta")
             if chan in message:
@@ -163,11 +178,11 @@ def hardcoded_commands(s, chan, user, modstatus, message):
         except Exception, e:
             print "error !kysy:", e
 
-    if message.startswith('!randomgame'):
+    if command == '!randomgame':
         try:
             providers = ["netent", "microgaming", "novo", "merkur", "btg", "gamomat", "quickspin", "playngo", "pragmatic", "pushgaming", "thunderkick", "blueprint"]
             try:
-                provider = message.split(" ", 1)[1]
+                provider = parameters[0]
             except IndexError:
                 provider = "all"
             if provider.lower() in providers + ["all"]:
@@ -175,14 +190,15 @@ def hardcoded_commands(s, chan, user, modstatus, message):
         except Exception, e:
             print "randomgame error", e
 
-    if message.startswith("!randomprovider"):
+    if command == "!randomprovider":
         try:
             providers = ["btg", "gamomat", "merkur", "microgaming", "netent", "netent", "pragmatic", "blueprint",
                          "novo", "novomatic", "quickspin", "quickspin", "playngo", "pushgaming", "thunderkick"]
             sendingService.send_msg(s, chan, random.choice(providers))
         except Exception, e:
             print "randomprovider error", e
-    if message.startswith('!täytteet'):
+
+    if command == '!täytteet':
         try:
             tayteamount = random.randint(2, 5)
             tayte = []
@@ -195,7 +211,7 @@ def hardcoded_commands(s, chan, user, modstatus, message):
             print "täytteet error"
             print e
 
-    if message.startswith('!juoma'):
+    if command == '!juoma':
         try:
             nimi, hinta, tyyppi, tuotenumero = get_drink()
             resp = nimi + " (" + tyyppi + ") (" + str(hinta) + "€)"# https://www.alko.fi/tuotteet/" + str(
@@ -204,7 +220,7 @@ def hardcoded_commands(s, chan, user, modstatus, message):
         except Exception, e:
             print "!juoma error", e
 
-    if message.startswith('!drinkki'):
+    if command == '!drinkki':
         try:
             nimi1, lhinta1, tyyppi1 = get_drink_mix()
             nimi2, lhinta2, tyyppi2 = get_drink_mix()
@@ -223,10 +239,10 @@ def hardcoded_commands(s, chan, user, modstatus, message):
         except Exception, e:
             print "drink error", e
 
-    if message.startswith('!title'):
+    if command == '!title':
         try:
             try:
-                a, thisChan = message.split("!title ")
+                thisChan = parameters[0]
             except:
                 thisChan = chan
 
@@ -237,43 +253,39 @@ def hardcoded_commands(s, chan, user, modstatus, message):
             print "!title error "
             print e
 
-    if message.startswith("!wikipedia "):
+    if command == "!wikipedia":
         try:
-            a, rest = message.split("!wikipedia ")
             try:
-                lang, title = rest.split(" ", 1)
-                title = title
-                lang = lang
+                lang, title = parameters[0], join_param(parameters[1:])
             except:
-                title = rest
+                title = parameters_joined
                 lang = "en"
 
             sendingService.send_msg(s, chan, wikipedia_haku(title, lang))
         except:
             print "wikipedia fake error"
 
-    if message.startswith("!wiki "):
+    if command == "!wiki":
         try:
-            a, rest = message.split("!wiki ")
-            site, title = rest.split("-", 1)
+            site, title = parameters[0], join_param(parameters[1:])
             resp = get_wikia_url(site, title)
             sendingService.send_msg(s, chan, resp)
         except Exception, e:
             print "error at !wiki: "
             print e
 
-    if message.startswith("!lolwiki "):
+    if command == "!lolwiki":
         try:
-            a, title = message.split("!lolwiki ")
+            title = parameters_joined
             resp = get_wikia_url("lolwiki", title)
             sendingService.send_msg(s, chan, resp)
         except Exception, e:
             print "error at !lolwiki: "
             print e
 
-    if message.startswith("!rswiki "):
+    if command == "!rswiki":
         try:
-            a, title = message.split("!rswiki ")
+            title = parameters_joined
             resp = get_osrs_wiki(title)
             sendingService.send_msg(s, chan, resp)
 
@@ -281,16 +293,16 @@ def hardcoded_commands(s, chan, user, modstatus, message):
             print "error at !rswiki: "
             print e
 
-    if message.startswith("!hswiki "):
+    if command == "!hswiki":
         try:
-            a, title = message.split("!hswiki ")
+            title = parameters_joined
             resp = get_wikia_url("hswiki", title)
             sendingService.send_msg(s, chan, resp)
         except Exception, e:
             print "error at !hswiki: "
             print e
 
-    if message.startswith("!randoms"):
+    if command == "!randoms":
         try:
             start, end = 1, 20
             roll = random.randint
@@ -301,73 +313,26 @@ def hardcoded_commands(s, chan, user, modstatus, message):
         except Exception, e:
             print e
 
-    if message.startswith("!followstatus"):
+    if command == "!followstatus" or command == "!follows" or command == "!followage":
         try:
             sent = 0
             try:
-                asd, name = message.split("!followstatus ")
+                name = parameters[0]
                 try:
-                    name, difchan = name.split(" ", 1)
+                    difchan = parameters[1]
                     sendingService.send_msg(s, chan, get_follow_status(name, difchan))
-                    sent = 1
+                    return
                 except:
                     pass
-                if sent == 0:
-                    sent = 1
-                    sendingService.send_msg(s, chan, get_follow_status(name, chan))
+                sendingService.send_msg(s, chan, get_follow_status(name, chan))
+                return
             except:
                 pass
-            if sent == 0:
-                sendingService.send_msg(s, chan, get_follow_status(user, chan))
-            sleep(1)
-        except:
-            print "followstatus error"
-
-    if message.startswith("!follows") and not message.startswith("!followstatus"):
-        try:
-            sent = 0
-            try:
-                asd, name = message.split("!follows ")
-                try:
-                    name, difchan = name.split(" ", 1)
-                    sendingService.send_msg(s, chan, get_follow_status(name, difchan))
-                    sent = 1
-                except:
-                    pass
-                if sent == 0:
-                    sent = 1
-                    sendingService.send_msg(s, chan, get_follow_status(name, chan))
-            except:
-                pass
-            if sent == 0:
-                sendingService.send_msg(s, chan, get_follow_status(user, chan))
-            sleep(1)
+            sendingService.send_msg(s, chan, get_follow_status(user, chan))
         except:
             print "follows error"
 
-    if message.startswith("!followage"):
-        try:
-            sent = 0
-            try:
-                asd, name = message.split("!followage ")
-                try:
-                    name, difchan = name.split(" ", 1)
-                    sendingService.send_msg(s, chan, get_follow_status(name, difchan))
-                    sent = 1
-                except:
-                    pass
-                if sent == 0:
-                    sent = 1
-                    sendingService.send_msg(s, chan, get_follow_status(name, chan))
-            except:
-                pass
-            if sent == 0:
-                sendingService.send_msg(s, chan, get_follow_status(user, chan))
-            sleep(1)
-        except:
-            print "followage error"
-
-    if message.startswith("!randomviewer"):
+    if command == "!randomviewer":
         try:
             viewerlist, vieweramount = get_viewers(chan)
             try:
@@ -390,35 +355,9 @@ def hardcoded_commands(s, chan, user, modstatus, message):
             print "Error random viewer"
             print e
 
-    if message.startswith("!rаndomviewer"):
+    if command == "!rng" or command == "!random":
         try:
-            viewerlist, vieweramount = get_viewers(chan)
-            chance = (1.0 / float(vieweramount)) * 100
-            with open("winner.txt", 'r') as f:
-                winner = f.readlines()[0]
-            followStatus = get_follow_status(winner, chan)
-            resp = "Viewers in: " + str(vieweramount) + ", chance to win: " + str(
-                round(chance, 2)) + "%, winner: " + winner + " (" + followStatus + ")"
-            sendingService.send_msg(s, chan, resp)
-        except Exception, e:
-            print "wetnis viewer error", e
-            
-    if message.startswith("!setwinner ") and user == OWNER:
-        try:
-            dump, winner = message.split("!setwinner ")
-            with open("winner.txt", 'w') as f:
-                f.write(winner)
-
-        except Exception, e:
-            print "setwinner error", e
-
-    if message.startswith("!rng ") or message.startswith("!random "):
-        try:
-            if message.startswith("!rng"):
-                u, a = message.split("!rng ")
-            if message.startswith("!random"):
-                u, a = message.split("!random ")
-            a, b = a.split(" ")
+            a, b = parameters[0], parameters[1]
             a = int(a)
             b = int(b)
 
@@ -431,34 +370,27 @@ def hardcoded_commands(s, chan, user, modstatus, message):
         except:
             print "rng error"
 
-    if message.startswith("!pyramid") and (user == OWNER or user == chan):
+    if command == "!pyramid" and (user == OWNER or user == chan):
         try:
-            a, b = message.split('!pyramid')
-            temp = b
-            sendingService.send_msg(s, chan, temp)
-            temp = b + b
-            sendingService.send_msg(s, chan, temp)
-            temp = b + b + b
-            sendingService.send_msg(s, chan, temp)
-            temp = b + b
-            sendingService.send_msg(s, chan, temp)
-            temp = b
-            sendingService.send_msg(s, chan, temp)
+            pyramid_str = parameters_joined
+            sendingService.send_msg(s, chan, pyramid_str)
+            sendingService.send_msg(s, chan, 2*pyramid_str)
+            sendingService.send_msg(s, chan, 3*pyramid_str)
+            sendingService.send_msg(s, chan, 2*pyramid_str)
+            sendingService.send_msg(s, chan, pyramid_str)
         except Exception, e:
             print "pyramid error ", e
 
-    if message.startswith("!adminspeak") and user == OWNER:
+    if command == "!adminspeak" and user == OWNER:
         try:
-            unused, chan_msg = message.split('!adminspeak')
-            ch, mg = chan_msg.split(' ', 1)
+            ch, mg = parameters[0], join_param(parameters[1:])
             sendingService.send_msg(s, ch, mg)
         except Exception, e:
             print "error adminspeak ", e
 
-    if message.startswith("!csfind "):
+    if command == "!csfind":
         try:
-            unused, steam_id = message.split('!csfind ')
-            steam_id = str(steam_id)
+            steam_id = str(parameters[0])
             if steam_id.startswith("7656119"):
                 resp = get_steam_stats(steam_id)
             else:
@@ -468,10 +400,9 @@ def hardcoded_commands(s, chan, user, modstatus, message):
         except Exception, e:
             print "error in csfind ", e
 
-    if message.startswith("!vac "):
+    if command == "!vac":
         try:
-            unused, steam_id = message.split('!vac ')
-            steam_id = str(steam_id)
+            steam_id = str(parameters[0])
             if steam_id.startswith("7656119"):
                 resp = get_steam_bans(steam_id)
             else:
@@ -481,18 +412,18 @@ def hardcoded_commands(s, chan, user, modstatus, message):
         except Exception, e:
             print "error in vac ", e
 
-    if message.startswith("!ge "):
+    if command == "!ge":
         try:
-            unused, searchterm = message.split('!ge ', 1)
+            searchterm = parameters_joined
             hinta = get_price(searchterm)
             sendingService.send_msg(s, chan, hinta)
         except Exception, e:
             print "mortsin ge error"
             print e
 
-    if message.startswith("!color "):
+    if command == "!color":
         try:
-            unused, color = message.split('!color', 1)
+            color = parameters[0]
             resp = "/color " + color
             sendingService.send_msg(s, chan, resp)
         except Exception, e:
