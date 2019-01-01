@@ -318,6 +318,7 @@ def get_twitch_id(name):
         req.add_header("Client-ID", TCLIENTID)
         resp = urllib2.urlopen(req)
         page = json.load(resp)
+        print page
         return page.get("data")[0]["id"]    
     except Exception, e:
         print "get_twitch_id error ->", e
@@ -328,13 +329,10 @@ def get_following(user, chan):
             userid = get_twitch_id(user)
             chanid = get_twitch_id(chan)
             url = ("https://api.twitch.tv/helix/users/follows?from_id=" + userid + "&to_id=" + chanid)
-            print url
             req = urllib2.Request(url)
             req.add_header("Client-ID", TCLIENTID)
-            print req
             resp = urllib2.urlopen(req)
             page = json.load(resp)
-            print page
             dateFollowed = page['data'][0]['followed_at']
             
         except Exception, e:
@@ -344,15 +342,37 @@ def get_following(user, chan):
             # delta = timedelta(seconds=timediff-7200)
         dif = rd.relativedelta(datetime.fromtimestamp(currenttime() - 7200), #10800 summer 7200 winter time
                                datetime.fromtimestamp(mktime(strptime(dateFollowed, "%Y-%m-%dT%H:%M:%SZ"))))
-        if dif.years != 0:
-            return "{0} years, {1} months, {2} days, {3} hrs".format(dif.years, dif.months, dif.days, dif.hours)
-        if dif.months != 0:
-            return "{0} months, {1} days, {2} hrs".format(dif.months, dif.days, dif.hours)
-        if dif.days != 0:
-            return "{0} days, {1} hrs, {2} min".format(dif.days, dif.hours, dif.minutes)
-        if dif.hours != 0:
-            return "{0} hours, {1} minutes".format(dif.hours, dif.minutes)
-        return "{0} minutes, {1} seconds".format(dif.minutes, dif.seconds)
+
+        if chan == "teukka":
+            follow_total_age = datetime.fromtimestamp(currenttime() - 7200) \
+                               - datetime.fromtimestamp(mktime(strptime(dateFollowed, "%Y-%m-%dT%H:%M:%SZ")))
+
+            teukka_created = datetime(2015, 03, 07)
+            teukka_total_age = datetime.now() - teukka_created
+            follow_age_in_percentages = float(follow_total_age.days) / float(teukka_total_age.days)
+            follow_age_rounded = int(round(follow_age_in_percentages*100, 0))
+
+        if chan == "teukka":
+            if dif.years != 0:
+                return "{0} years, {1} months, {2} days, {3} hrs ({4}% of channel age!)".format(dif.years, dif.months, dif.days, dif.hours, follow_age_rounded)
+            if dif.months != 0:
+                return "{0} months, {1} days, {2} hrs ({3}% of channel age!)".format(dif.months, dif.days, dif.hours, follow_age_rounded)
+            if dif.days != 0:
+                return "{0} days, {1} hrs, {2} min ({3}% of channel age!)".format(dif.days, dif.hours, dif.minutes, follow_age_rounded)
+            if dif.hours != 0:
+                return "{0} hours, {1} minutes ({2}% of channel age!)".format(dif.hours, dif.minutes, follow_age_rounded)
+            return "{0} minutes, {1} seconds ({2}% of channel age!)".format(dif.minutes, dif.seconds, follow_age_rounded)
+        else:
+            if dif.years != 0:
+                return "{0} years, {1} months, {2} days, {3} hrs".format(dif.years, dif.months, dif.days, dif.hours)
+            if dif.months != 0:
+                return "{0} months, {1} days, {2} hrs".format(dif.months, dif.days, dif.hours)
+            if dif.days != 0:
+                return "{0} days, {1} hrs, {2} min".format(dif.days, dif.hours, dif.minutes)
+            if dif.hours != 0:
+                return "{0} hours, {1} minutes".format(dif.hours, dif.minutes)
+            return "{0} minutes, {1} seconds".format(dif.minutes, dif.seconds)
+
     except Exception, e:
         print "get_following error at api.py, info:", e
 
